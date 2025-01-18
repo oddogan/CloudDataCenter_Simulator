@@ -3,8 +3,7 @@
 #include <chrono>
 #include <thread>
 
-#include "strategies/FirstFitDecreasing.h"
-#include "strategies/BestFitDecreasing.h"
+#include "strategies/StrategyFactory.h"
 #include "data/Resources.h"
 
 SimulatorController::SimulatorController(QObject *parent)
@@ -60,7 +59,7 @@ void SimulatorController::initialize(const QString &traceFile)
     m_stop = false;
 
     // Create an initial strategy
-    IPlacementStrategy *initStrat = new FirstFitDecreasing();
+    IConfigurableStrategy *initStrat = StrategyFactory::create("FirstFitDecreasing");
     m_dataCenter = new DataCenter(initStrat, 3);
 
     // Add some PMs
@@ -139,6 +138,15 @@ void SimulatorController::setBundleSize(int bSize)
     if (m_dataCenter)
     {
         m_dataCenter->setBundleSize(bSize);
+    }
+}
+
+void SimulatorController::setStrategy(IConfigurableStrategy *strategy)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_dataCenter)
+    {
+        m_dataCenter->setPlacementStrategy(strategy);
     }
 }
 

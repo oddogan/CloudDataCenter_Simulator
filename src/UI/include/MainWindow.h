@@ -5,6 +5,9 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QChartView>
 #include <QtCharts/QValueAxis>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QComboBox>
 #include "SimulatorController.h"
 
 QT_BEGIN_NAMESPACE
@@ -27,6 +30,8 @@ private slots:
     void on_btnStart_clicked();
     void on_btnStop_clicked();
     void on_bundleSizeSpinBox_valueChanged(int arg1);
+    void onStrategyChanged(int index);
+    void onApplyStrategyButtonClicked();
 
     // For real-time updates
     void onUpdateTimerTimeout();
@@ -44,4 +49,7 @@ private:
 
     QTimer m_updateTimer;
     double m_startTime;
+
+    IConfigurableStrategy *m_currentStrategy;
+    QWidget *m_currentConfigWidget;
 };

@@ -2,6 +2,20 @@
 #include <algorithm>
 #include "strategies/MachineState.h"
 #include "data/Resources.h"
+#include <QWidget>
+#include <QLabel>
+#include <QVBoxLayout>
+
+FirstFitDecreasing::FirstFitDecreasing()
+    : m_configWidget(nullptr)
+{
+}
+
+FirstFitDecreasing::~FirstFitDecreasing()
+{
+    // If the widget has a parent, Qt will usually delete it automatically, but let's be safe:
+    delete m_configWidget;
+}
 
 std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<VirtualMachine *> &vms, const std::vector<PhysicalMachine> &machines)
 {
@@ -49,4 +63,29 @@ std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<Virtual
     }
 
     return results;
+}
+
+QWidget *FirstFitDecreasing::createConfigWidget(QWidget *parent)
+{
+    if (!m_configWidget)
+    {
+        m_configWidget = new QWidget(parent);
+        auto layout = new QVBoxLayout(m_configWidget);
+
+        QLabel *label = new QLabel("No configuration for FirstFitDecreasing", m_configWidget);
+        layout->addWidget(label);
+
+        m_configWidget->setLayout(layout);
+    }
+    return m_configWidget;
+}
+
+void FirstFitDecreasing::applyConfigFromUI()
+{
+    // No parameters to update
+}
+
+QString FirstFitDecreasing::name() const
+{
+    return "FirstFitDecreasing";
 }

@@ -6,7 +6,6 @@
 #include "events/VMRequestEvent.h"
 #include "events/VMDepartureEvent.h"
 #include "events/VMUtilUpdateEvent.h"
-#include "events/ReconfigureStrategyEvent.h"
 #include "data/VirtualMachine.h"
 #include "data/Resources.h"
 
@@ -111,17 +110,6 @@ void TraceReader::parsingLoop()
             }
             // push event
             auto evt = std::make_shared<VMRequestEvent>(tstart, std::move(vm));
-            m_queue.push(evt);
-        }
-        else if (reqType == 1)
-        {
-            // ReconfigureStrategy: "time, strategyName"
-            double t;
-            ss >> t;
-            ss.ignore(1);
-            std::string stratName;
-            ss >> stratName;
-            auto evt = std::make_shared<ReconfigureStrategyEvent>(t, stratName);
             m_queue.push(evt);
         }
         else

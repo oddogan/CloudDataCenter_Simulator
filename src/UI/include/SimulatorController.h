@@ -40,6 +40,9 @@ public:
     // Set bundling at runtime
     void setBundleSize(int bSize);
 
+    // Set strategy at runtime
+    void setStrategy(IConfigurableStrategy *strategy);
+
     // Current simulation time
     double currentSimTime();
 

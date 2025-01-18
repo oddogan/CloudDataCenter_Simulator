@@ -2,6 +2,19 @@
 #include <algorithm>
 #include "strategies/MachineState.h"
 #include "data/Resources.h"
+#include <QWidget>
+#include <QLabel>
+#include <QVBoxLayout>
+
+BestFitDecreasing::BestFitDecreasing()
+    : m_configWidget(nullptr)
+{
+}
+
+BestFitDecreasing::~BestFitDecreasing()
+{
+    delete m_configWidget;
+}
 
 std::vector<PlacementDecision> BestFitDecreasing::run(
     const std::vector<VirtualMachine *> &vms,
@@ -59,4 +72,27 @@ std::vector<PlacementDecision> BestFitDecreasing::run(
     }
 
     return results;
+}
+
+QWidget *BestFitDecreasing::createConfigWidget(QWidget *parent)
+{
+    if (!m_configWidget)
+    {
+        m_configWidget = new QWidget(parent);
+        auto layout = new QVBoxLayout(m_configWidget);
+        QLabel *label = new QLabel("No configuration for BestFitDecreasing", m_configWidget);
+        layout->addWidget(label);
+        m_configWidget->setLayout(layout);
+    }
+    return m_configWidget;
+}
+
+void BestFitDecreasing::applyConfigFromUI()
+{
+    // No parameters
+}
+
+QString BestFitDecreasing::name() const
+{
+    return "BestFitDecreasing";
 }
