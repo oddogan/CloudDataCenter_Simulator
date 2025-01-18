@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <iostream>
 
-DataCenter::DataCenter(IPlacementStrategy *initStrat, size_t bundleSize)
+DataCenter::DataCenter(IConfigurableStrategy *initStrat, size_t bundleSize)
     : m_strategy(initStrat), m_bundleSize(bundleSize)
 {
 }
@@ -40,12 +40,13 @@ void DataCenter::setBundleSize(size_t newSize)
     m_bundleSize = newSize;
 }
 
-void DataCenter::setPlacementStrategy(IPlacementStrategy *strat)
+void DataCenter::setPlacementStrategy(IConfigurableStrategy *strat)
 {
+    std::lock_guard<std::mutex> lock(m_strategyMutex);
+
     if (m_strategy)
-    {
         delete m_strategy;
-    }
+
     m_strategy = strat;
 }
 
@@ -80,26 +81,6 @@ void DataCenter::handle(const VMDepartureEvent &evt, SimulationEngine &engine)
     removeVM(evt.getVmId());
 }
 
-void DataCenter::handle(const ReconfigureStrategyEvent &evt, SimulationEngine &engine)
-{
-    std::string name = evt.getStrategyName();
-    if (name == "FirstFitDecreasing")
-    {
-        setPlacementStrategy(new FirstFitDecreasing());
-    }
-    else if (name == "BestFitDecreasing")
-    {
-        setPlacementStrategy(new BestFitDecreasing());
-    }
-    else
-    {
-        std::cerr << "[DataCenter] Unknown strategy " << name
-                  << ", fallback to FirstFit.\n";
-        setPlacementStrategy(new FirstFitDecreasing());
-    }
-    std::cout << "[DataCenter] Strategy reconfigured to " << name << std::endl;
-}
-
 void DataCenter::placeBundledVMs(SimulationEngine &engine)
 {
     if (!m_strategy)
@@ -114,20 +95,30 @@ void DataCenter::placeBundledVMs(SimulationEngine &engine)
         m_bundle.clear();
     }
 
-    auto decisions = m_strategy->run(copy, m_physicalMachines);
-
-    // Apply them
-    for (auto &dec : decisions)
     {
-        if (dec.pmId < 0)
+        std::lock_guard<std::mutex> lock(m_strategyMutex);
+        // Run strategy
+        if (!m_strategy)
         {
-            std::cerr << "[WARN] No fit for VM " << dec.vm->getID() << std::endl;
-            throw std::runtime_error("No fit for VM");
+            std::cerr << "[WARN] No strategy set" << std::endl;
+            throw std::runtime_error("No strategy set");
+            return;
         }
-        else
+        auto decisions = m_strategy->run(copy, m_physicalMachines);
+
+        // Apply them
+        for (auto &dec : decisions)
         {
-            std::cout << "[DataCenter] Placing VM " << dec.vm->getID() << " on PM " << dec.pmId << std::endl;
-            placeVMonPM(dec.vm, dec.pmId, engine);
+            if (dec.pmId < 0)
+            {
+                std::cerr << "[WARN] No fit for VM " << dec.vm->getID() << std::endl;
+                throw std::runtime_error("No fit for VM");
+            }
+            else
+            {
+                std::cout << "[DataCenter] Placing VM " << dec.vm->getID() << " on PM " << dec.pmId << std::endl;
+                placeVMonPM(dec.vm, dec.pmId, engine);
+            }
         }
     }
 }

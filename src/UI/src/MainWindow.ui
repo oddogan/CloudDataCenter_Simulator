@@ -1,64 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
-  <property name="windowTitle">
-   <string>Cloud Data Center Simulator</string>
-  </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="topLayout">
-      <item>
-       <widget class="QPushButton" name="btnLoadTrace">
-        <property name="text">
-         <string>Load Trace</string>
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="windowTitle">
+            <string>Cloud Data Center Simulator</string>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnStart">
-        <property name="text">
-         <string>Start</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnStop">
-        <property name="text">
-         <string>Stop</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="labelBundle">
-        <property name="text">
-         <string>Bundle Size:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QSpinBox" name="bundleSizeSpinBox">
-        <property name="minimum">
-         <number>1</number>
-        </property>
-        <property name="value">
-         <number>3</number>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="QChartView" name="chartView">
-        <property name="minimumSize">
-        <size>
-        <width>600</width>
-        <height>300</height>
-        </size>
-        </property>
-        </widget>
-    </item>
+    <widget class="QWidget" name="centralwidget">
+        <layout class="QVBoxLayout" name="verticalLayout">
+            <!-- Row with "Start" and "Stop" buttons, and "Load Trace" -->
+            <item>
+                <layout class="QHBoxLayout" name="startStopLayout">
+                    <item>
+                        <widget class="QPushButton" name="btnLoadTrace">
+                            <property name="text">
+                                <string>Load Trace</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="btnStart">
+                            <property name="text">
+                                <string>Start</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="btnStop">
+                            <property name="text">
+                                <string>Stop</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </item>
+            <!-- Row with strategy combo + "Apply" button -->
+            <item>
+                <layout class="QHBoxLayout" name="strategyLayout">
+                    <item>
+                        <widget class="QLabel" name="strategyLabel">
+                            <property name="text">
+                                <string>Strategy:</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QComboBox" name="strategyComboBox"/>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="applyStrategyButton">
+                            <property name="text">
+                                <string>Apply</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </item>
+
+            <!-- A container for the config widget -->
+            <item>
+                <widget class="QWidget" name="strategyConfigContainer">
+                    <property name="minimumSize">
+                        <size>
+                            <width>400</width>
+                            <height>100</height>
+                        </size>
+                    </property>
+                </widget>
+            </item>
+
+            <!-- The usage chart -->
+            <item>
+                <widget class="QChartView" name="chartView">
+                    <property name="minimumSize">
+                        <size>
+                            <width>600</width>
+                            <height>300</height>
+                        </size>
+                    </property>
+                </widget>
+            </item>
+
    </layout>
   </widget>
  </widget>

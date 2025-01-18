@@ -7,8 +7,10 @@
 
 #include <algorithm>
 
+#include "strategies/StrategyFactory.h"
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), m_cpuSeries(new QLineSeries(this)), m_ramSeries(new QLineSeries(this)), m_diskSeries(new QLineSeries(this)), m_bandwidthSeries(new QLineSeries(this)), m_axisX(new QValueAxis(this)), m_axisY(new QValueAxis(this)), m_startTime(0.0)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_cpuSeries(new QLineSeries(this)), m_ramSeries(new QLineSeries(this)), m_diskSeries(new QLineSeries(this)), m_bandwidthSeries(new QLineSeries(this)), m_axisX(new QValueAxis(this)), m_axisY(new QValueAxis(this)), m_startTime(0.0), m_currentStrategy(nullptr), m_currentConfigWidget(nullptr)
 {
     ui->setupUi(this);
 
@@ -55,6 +57,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_updateTimer, &QTimer::timeout,
             this, &MainWindow::onUpdateTimerTimeout);
     m_updateTimer.start(10); // 1-second updates
+
+    // Fill strategy combo
+    auto names = StrategyFactory::availableStrategies();
+    for (auto &n : names)
+    {
+        ui->strategyComboBox->addItem(n);
+    }
+    // connect signals
+    connect(ui->strategyComboBox,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onStrategyChanged);
+
+    connect(ui->applyStrategyButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onApplyStrategyButtonClicked);
+
+    // select first strategy
+    ui->strategyComboBox->setCurrentIndex(0);
+    onStrategyChanged(0);
 }
 
 MainWindow::~MainWindow()
@@ -91,6 +113,65 @@ void MainWindow::on_btnStop_clicked()
 void MainWindow::on_bundleSizeSpinBox_valueChanged(int arg1)
 {
     m_controller.setBundleSize(arg1);
+}
+
+void MainWindow::onStrategyChanged(int index)
+{
+    QString name = ui->strategyComboBox->itemText(index);
+
+    // Make a new strategy
+    IConfigurableStrategy *newStrategy = StrategyFactory::create(name);
+
+    // Make its config widget
+    QWidget *w = newStrategy->createConfigWidget(this);
+
+    // Remove old widget from layout if any
+    if (m_currentConfigWidget)
+    {
+        // find layout in strategyConfigContainer
+        auto layout = ui->strategyConfigContainer->layout();
+        if (layout)
+        {
+            layout->removeWidget(m_currentConfigWidget);
+        }
+        m_currentConfigWidget->deleteLater();
+        m_currentConfigWidget = nullptr;
+    }
+
+    // If no layout yet, create one
+    if (!ui->strategyConfigContainer->layout())
+    {
+        auto vbox = new QVBoxLayout(ui->strategyConfigContainer);
+        ui->strategyConfigContainer->setLayout(vbox);
+    }
+    ui->strategyConfigContainer->layout()->addWidget(w);
+    m_currentConfigWidget = w;
+
+    // If we had an old strategy not applied to DataCenter, delete it
+    if (m_currentStrategy)
+    {
+        delete m_currentStrategy;
+        m_currentStrategy = nullptr;
+    }
+
+    m_currentStrategy = newStrategy;
+}
+
+// When user clicks "Apply", we finalize and tell DataCenter
+void MainWindow::onApplyStrategyButtonClicked()
+{
+    if (!m_currentStrategy)
+        return;
+    // let the strategy read from its widget
+    m_currentStrategy->applyConfigFromUI();
+
+    // Now pass it to data center. We assume dataCenter takes ownership
+    m_controller.setStrategy(m_currentStrategy);
+
+    // So we don't double delete
+    m_currentStrategy = nullptr;
+
+    qDebug() << "[MainWindow] Strategy applied to DataCenter.";
 }
 
 void MainWindow::onUpdateTimerTimeout()
