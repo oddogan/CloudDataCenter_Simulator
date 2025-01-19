@@ -17,9 +17,11 @@ FirstFitDecreasing::~FirstFitDecreasing()
     delete m_configWidget;
 }
 
-std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<VirtualMachine *> &vms, const std::vector<PhysicalMachine> &machines)
+Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
 {
-    // Step 1: Build ephemeral MachineState from each real PM
+    Results results;
+
+    // Build ephemeral MachineState from each real PM
     std::vector<MachineState> localStates;
     localStates.reserve(machines.size());
     for (auto &pm : machines)
@@ -31,16 +33,17 @@ std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<Virtual
         localStates.push_back(ms);
     }
 
-    // Step 2: Sort VMs by descending CPU usage
-    std::vector<VirtualMachine *> sorted = vms;
-    std::sort(sorted.begin(), sorted.end(), [](auto *a, auto *b)
+    // 1) Handle newRequests
+    // Sort VMs by descending CPU usage
+    std::vector<VirtualMachine *> sortedNew = newRequests;
+    std::sort(sortedNew.begin(), sortedNew.end(), [](auto *a, auto *b)
               { return a->getUsage().cpu > b->getUsage().cpu; });
 
-    std::vector<PlacementDecision> results;
-    results.reserve(vms.size());
+    // Reserve space for results
+    results.placementDecision.reserve(newRequests.size());
 
-    // Step 3: For each VM in descending order, do a "First Fit"
-    for (auto *vm : sorted)
+    // For each VM in descending order, do a "First Fit"
+    for (auto *vm : sortedNew)
     {
         Resources need = vm->getTotalRequestedResources();
         bool placed = false;
@@ -50,7 +53,7 @@ std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<Virtual
             if (ms.canHost(need))
             {
                 ms.used += need; // ephemeral allocation
-                results.push_back({vm, ms.id});
+                results.placementDecision.push_back({vm, ms.id});
                 placed = true;
                 break;
             }
@@ -58,7 +61,39 @@ std::vector<PlacementDecision> FirstFitDecreasing::run(const std::vector<Virtual
         if (!placed)
         {
             // no fit found
-            results.push_back({vm, -1});
+            results.placementDecision.push_back({vm, -1});
+        }
+    }
+
+    // 2) Handle toMigrate
+    // Sort VMs by descending CPU usage
+    std::vector<VirtualMachine *> sortedMig = toMigrate;
+    std::sort(sortedMig.begin(), sortedMig.end(), [](auto *a, auto *b)
+              { return a->getUsage().cpu > b->getUsage().cpu; });
+
+    // Reserve space for results
+    results.migrationDecision.reserve(toMigrate.size());
+
+    // For each VM in descending order, do a "First Fit"
+    for (auto *vm : sortedMig)
+    {
+        Resources need = vm->getTotalRequestedResources();
+        bool placed = false;
+
+        for (auto &ms : localStates)
+        {
+            if (ms.canHost(need))
+            {
+                ms.used += need; // ephemeral allocation
+                results.migrationDecision.push_back({vm, ms.id});
+                placed = true;
+                break;
+            }
+        }
+        if (!placed)
+        {
+            // no fit found
+            results.migrationDecision.push_back({vm, -1});
         }
     }
 

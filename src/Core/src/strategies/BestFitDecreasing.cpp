@@ -16,10 +16,10 @@ BestFitDecreasing::~BestFitDecreasing()
     delete m_configWidget;
 }
 
-std::vector<PlacementDecision> BestFitDecreasing::run(
-    const std::vector<VirtualMachine *> &vms,
-    const std::vector<PhysicalMachine> &machines)
+Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
 {
+    Results results;
+
     // Build ephemeral
     std::vector<MachineState> localStates;
     localStates.reserve(machines.size());
@@ -32,15 +32,17 @@ std::vector<PlacementDecision> BestFitDecreasing::run(
         localStates.push_back(ms);
     }
 
+    // 1) Handle newRequests
     // Sort VMs by descending CPU usage
-    std::vector<VirtualMachine *> sorted = vms;
-    std::sort(sorted.begin(), sorted.end(), [](auto *a, auto *b)
-              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
+    std::vector<VirtualMachine *> sortedNew = newRequests;
+    std::sort(sortedNew.begin(), sortedNew.end(), [](auto *a, auto *b)
+              { return a->getUsage().cpu > b->getUsage().cpu; });
 
-    std::vector<PlacementDecision> results;
-    results.reserve(vms.size());
+    // Reserve space for results
+    results.placementDecision.reserve(newRequests.size());
 
-    for (auto *vm : sorted)
+    // For each VM in descending order, do a "Best Fit"
+    for (auto *vm : sortedNew)
     {
         Resources need = vm->getTotalRequestedResources();
         int bestIdx = -1;
@@ -63,11 +65,52 @@ std::vector<PlacementDecision> BestFitDecreasing::run(
         if (bestIdx >= 0)
         {
             localStates[bestIdx].used += need;
-            results.push_back({vm, localStates[bestIdx].id});
+            results.placementDecision.push_back({vm, localStates[bestIdx].id});
         }
         else
         {
-            results.push_back({vm, -1});
+            results.placementDecision.push_back({vm, -1});
+        }
+    }
+
+    // 2) Handle toMigrate
+    // Sort VMs by descending CPU usage
+    std::vector<VirtualMachine *> sortedMig = toMigrate;
+    std::sort(sortedMig.begin(), sortedMig.end(), [](auto *a, auto *b)
+              { return a->getUsage().cpu > b->getUsage().cpu; });
+
+    // Reserve space for results
+    results.migrationDecision.reserve(toMigrate.size());
+
+    // For each VM in descending order, do a "Best Fit"
+    for (auto *vm : sortedNew)
+    {
+        Resources need = vm->getTotalRequestedResources();
+        int bestIdx = -1;
+        double bestLeftCPU = 1e9;
+
+        // best fit
+        for (int i = 0; i < (int)localStates.size(); i++)
+        {
+            auto &ms = localStates[i];
+            if (ms.canHost(need))
+            {
+                double leftover = (ms.total.cpu - ms.used.cpu) - need.cpu;
+                if (leftover < bestLeftCPU)
+                {
+                    bestLeftCPU = leftover;
+                    bestIdx = i;
+                }
+            }
+        }
+        if (bestIdx >= 0)
+        {
+            localStates[bestIdx].used += need;
+            results.migrationDecision.push_back({vm, localStates[bestIdx].id});
+        }
+        else
+        {
+            results.migrationDecision.push_back({vm, -1});
         }
     }
 

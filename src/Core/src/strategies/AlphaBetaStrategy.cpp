@@ -16,14 +16,14 @@ AlphaBetaStrategy::~AlphaBetaStrategy()
     delete m_configWidget;
 }
 
-std::vector<PlacementDecision> AlphaBetaStrategy::run(
-    const std::vector<VirtualMachine *> &vms,
-    const std::vector<PhysicalMachine> &pms)
+Results AlphaBetaStrategy::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
 {
+    Results results;
+
     // Build ephemeral
     std::vector<MachineState> localStates;
-    localStates.reserve(pms.size());
-    for (auto &pm : pms)
+    localStates.reserve(machines.size());
+    for (auto &pm : machines)
     {
         MachineState ms;
         ms.id = pm.getID();
@@ -33,15 +33,14 @@ std::vector<PlacementDecision> AlphaBetaStrategy::run(
     }
 
     // Example: place VMs in descending order by (alpha*CPU + beta*RAM)
-    std::vector<VirtualMachine *> sorted = vms;
+    std::vector<VirtualMachine *> sorted = newRequests;
     std::sort(sorted.begin(), sorted.end(), [&](auto *a, auto *b)
               {
         double costA = m_alpha * a->getUsage().cpu + m_beta * a->getUsage().ram;
         double costB = m_alpha * b->getUsage().cpu + m_beta * b->getUsage().ram;
         return costA > costB; });
 
-    std::vector<PlacementDecision> results;
-    results.reserve(vms.size());
+    results.placementDecision.reserve(newRequests.size());
 
     // We'll do a naive "first fit" but using the sorted array
     for (auto *vm : sorted)
@@ -53,14 +52,14 @@ std::vector<PlacementDecision> AlphaBetaStrategy::run(
             if (ms.canHost(need))
             {
                 ms.used += need; // ephemeral
-                results.push_back({vm, ms.id});
+                results.placementDecision.push_back({vm, ms.id});
                 placed = true;
                 break;
             }
         }
         if (!placed)
         {
-            results.push_back({vm, -1});
+            results.placementDecision.push_back({vm, -1});
         }
     }
     return results;

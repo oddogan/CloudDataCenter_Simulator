@@ -120,7 +120,7 @@ void MainWindow::onStrategyChanged(int index)
     QString name = ui->strategyComboBox->itemText(index);
 
     // Make a new strategy
-    IConfigurableStrategy *newStrategy = StrategyFactory::create(name);
+    IPlacementStrategy *newStrategy = StrategyFactory::create(name);
 
     // Make its config widget
     QWidget *w = newStrategy->createConfigWidget(this);

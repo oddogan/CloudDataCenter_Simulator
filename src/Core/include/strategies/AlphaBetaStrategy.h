@@ -1,19 +1,17 @@
 #pragma once
 
-#include "IConfigurableStrategy.h"
 #include <QWidget>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
+#include "IPlacementStrategy.h"
 
-class AlphaBetaStrategy : public IConfigurableStrategy
+class AlphaBetaStrategy : public IPlacementStrategy
 {
 public:
     AlphaBetaStrategy();
     ~AlphaBetaStrategy() override;
 
-    std::vector<PlacementDecision> run(
-        const std::vector<VirtualMachine *> &vms,
-        const std::vector<PhysicalMachine> &pms) override;
+    Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
