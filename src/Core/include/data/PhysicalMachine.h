@@ -46,6 +46,11 @@ public:
             return Resources(0, 0, 0, 0, 0);
         return m_usedResources / m_totalResources * 100;
     }
+    bool isOvercommitted() const
+    {
+        auto free = getFreeResources();
+        return (free.cpu < 0 || free.ram < 0 || free.disk < 0 || free.bandwidth < 0 || free.fpga < 0);
+    }
 
     void addVM(VirtualMachine *vm)
     {
@@ -79,6 +84,8 @@ public:
         }
         return nullptr;
     }
+
+    const std::vector<VirtualMachine *> &getVirtualMachines() const { return m_virtualMachines; }
 
 private:
     int m_ID;

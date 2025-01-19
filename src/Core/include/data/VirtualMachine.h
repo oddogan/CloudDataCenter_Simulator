@@ -13,7 +13,7 @@ class VirtualMachine
 {
 public:
     VirtualMachine(int id, const Resources &requestedResources, double duration)
-        : m_ID(id), m_duration(duration), m_isPlaced(false), m_totalRequestedResources(requestedResources), m_currentUsage(0, 0, 0, 0, 0)
+        : m_ID(id), m_duration(duration), m_isPlaced(false), m_isMigrating(false), m_totalRequestedResources(requestedResources), m_currentUsage(0, 0, 0, 0, 0)
     {
     }
 
@@ -21,6 +21,9 @@ public:
 
     bool isPlaced() const { return m_isPlaced; }
     void setPlaced(bool isPlaced) { m_isPlaced = isPlaced; }
+
+    bool isMigrating() const { return m_isMigrating; }
+    void setMigrating(bool isMigrating) { m_isMigrating = isMigrating; }
 
     double getStartTime() const { return m_startTime; }
     void setStartTime(double startTime) { m_startTime = startTime; }
@@ -37,6 +40,7 @@ private:
     double m_startTime;
     double m_duration;
     bool m_isPlaced;
+    bool m_isMigrating;
 
     Resources m_totalRequestedResources;
     Resources m_currentUsage;

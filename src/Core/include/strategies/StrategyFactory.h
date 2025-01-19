@@ -2,12 +2,12 @@
 
 #include <QString>
 #include <QStringList>
-#include "IConfigurableStrategy.h"
+#include "IPlacementStrategy.h"
 
 class StrategyFactory
 {
 public:
-    static IConfigurableStrategy *create(const QString &name);
+    static IPlacementStrategy *create(const QString &name);
 
     // List all known strategy names for the UI
     static QStringList availableStrategies();

@@ -59,7 +59,7 @@ void SimulatorController::initialize(const QString &traceFile)
     m_stop = false;
 
     // Create an initial strategy
-    IConfigurableStrategy *initStrat = StrategyFactory::create("FirstFitDecreasing");
+    IPlacementStrategy *initStrat = StrategyFactory::create("FirstFitDecreasing");
     m_dataCenter = new DataCenter(initStrat, 3);
 
     // Add some PMs
@@ -141,7 +141,7 @@ void SimulatorController::setBundleSize(int bSize)
     }
 }
 
-void SimulatorController::setStrategy(IConfigurableStrategy *strategy)
+void SimulatorController::setStrategy(IPlacementStrategy *strategy)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_dataCenter)

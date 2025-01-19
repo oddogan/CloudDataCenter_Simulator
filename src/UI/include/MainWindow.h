@@ -50,6 +50,6 @@ private:
     QTimer m_updateTimer;
     double m_startTime;
 
-    IConfigurableStrategy *m_currentStrategy;
+    IPlacementStrategy *m_currentStrategy;
     QWidget *m_currentConfigWidget;
 };

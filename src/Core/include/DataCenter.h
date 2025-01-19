@@ -8,20 +8,22 @@
 #include "events/VMRequestEvent.h"
 #include "events/VMUtilUpdateEvent.h"
 #include "events/VMDepartureEvent.h"
-#include "strategies/IConfigurableStrategy.h"
+#include "events/MigrationCompleteEvent.h"
+#include "strategies/StrategyFactory.h"
 
 class SimulationEngine;
 
 class DataCenter
 {
 public:
-    DataCenter(IConfigurableStrategy *strategy, size_t bundleSize = 1);
+    DataCenter(IPlacementStrategy *strategy, size_t bundleSize = 1);
     ~DataCenter();
 
     // Handle each event type
     void handle(const VMRequestEvent &event, SimulationEngine &engine);
     void handle(const VMUtilUpdateEvent &event, SimulationEngine &engine);
     void handle(const VMDepartureEvent &event, SimulationEngine &engine);
+    void handle(const MigrationCompleteEvent &event, SimulationEngine &engine);
 
     void addPhysicalMachine(const PhysicalMachine &pm);
 
@@ -29,11 +31,10 @@ public:
     void printUsageSummary() const;
 
     // Called by the simulation or externally
-    void setPlacementStrategy(IConfigurableStrategy *strategy);
+    void setPlacementStrategy(IPlacementStrategy *strategy);
 
     // For bundling
     void setBundleSize(size_t size);
-    void placeBundledVMs(SimulationEngine &engine);
 
     // Thread-safe updates
     bool updateVM(int vmId, double utilization);
@@ -42,16 +43,22 @@ public:
     const std::vector<PhysicalMachine> &getPhysicalMachines() const { return m_physicalMachines; }
 
 private:
+    void runPlacement(SimulationEngine &engine);
+    void scheduleMigration(SimulationEngine &engine, int vmID, int new_pmID);
+    bool detectOvercommitment(int pmId, SimulationEngine &engine);
+    double computeMigrationTime(VirtualMachine *vm) const;
+
     void placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine);
     PhysicalMachine *findPM(int pmID) const;
 
     mutable std::mutex m_strategyMutex;
-    IConfigurableStrategy *m_strategy;
+    IPlacementStrategy *m_strategy;
 
     // Bundling
     size_t m_bundleSize;
-    std::vector<VirtualMachine *> m_bundle;
     mutable std::mutex m_bundleMutex;
+    std::vector<VirtualMachine *> m_pendingNewRequests;
+    std::vector<VirtualMachine *> m_pendingMigrations;
 
     // Physical machines
     std::vector<PhysicalMachine> m_physicalMachines;

@@ -41,7 +41,7 @@ public:
     void setBundleSize(int bSize);
 
     // Set strategy at runtime
-    void setStrategy(IConfigurableStrategy *strategy);
+    void setStrategy(IPlacementStrategy *strategy);
 
     // Current simulation time
     double currentSimTime();

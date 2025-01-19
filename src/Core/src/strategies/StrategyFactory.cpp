@@ -3,7 +3,7 @@
 #include "strategies/BestFitDecreasing.h"
 #include "strategies/AlphaBetaStrategy.h"
 
-IConfigurableStrategy *StrategyFactory::create(const QString &name)
+IPlacementStrategy *StrategyFactory::create(const QString &name)
 {
     if (name == "FirstFitDecreasing")
     {

@@ -1,13 +1,13 @@
 #pragma once
-#include "IConfigurableStrategy.h"
+#include "IPlacementStrategy.h"
 
-class BestFitDecreasing : public IConfigurableStrategy
+class BestFitDecreasing : public IPlacementStrategy
 {
 public:
     BestFitDecreasing();
     ~BestFitDecreasing() override;
 
-    std::vector<PlacementDecision> run(const std::vector<VirtualMachine *> &vms, const std::vector<PhysicalMachine> &machines) override;
+    Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
