@@ -85,7 +85,7 @@ void DataCenter::handle(const VMDepartureEvent &event, SimulationEngine &engine)
 {
     removeVM(event.getVmId());
 
-    std::cout << "[DataCenter] VM " << event.getVmId() << " departed" << std::endl;
+    LogManager::instance().log(LogCategory::VM_DEPARTURE, "VM " + std::to_string(event.getVmId()) + " departed");
 }
 
 void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &engine)
@@ -141,12 +141,12 @@ void DataCenter::runPlacement(SimulationEngine &engine)
     {
         if (pd.pmId < 0)
         {
-            std::cerr << "[WARN] No fit for VM " << pd.vm->getID() << std::endl;
+            LogManager::instance().log(LogCategory::PLACEMENT, "No fit for VM " + std::to_string(pd.vm->getID()));
             throw std::runtime_error("No fit for VM");
         }
         else
         {
-            std::cout << "[DataCenter] Placing VM " << pd.vm->getID() << " on PM " << pd.pmId << std::endl;
+            LogManager::instance().log(LogCategory::PLACEMENT, "VM " + std::to_string(pd.vm->getID()) + " placed on PM " + std::to_string(pd.pmId));
             placeVMonPM(pd.vm, pd.pmId, engine);
         }
     }
@@ -156,16 +156,16 @@ void DataCenter::runPlacement(SimulationEngine &engine)
     {
         if (pd.pmId < 0)
         {
-            std::cerr << "[WARN] No migration fit for VM " << pd.vm->getID() << std::endl;
+            LogManager::instance().log(LogCategory::VM_MIGRATION, "No migration fit for VM " + std::to_string(pd.vm->getID()));
             throw std::runtime_error("No migration fit for VM");
         }
         else if (pd.pmId == m_vmIndex[pd.vm->getID()].first)
         {
-            std::cerr << "[WARN] Migration to same PM for VM " << pd.vm->getID() << std::endl;
+            LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(pd.vm->getID()) + " already on PM " + std::to_string(pd.pmId));
         }
         else
         {
-            std::cout << "[DataCenter] Scheduling migration VM " << pd.vm->getID() << " from PM " << m_vmIndex[pd.vm->getID()].first << " to PM " << pd.pmId << std::endl;
+            LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(pd.vm->getID()) + " migrating from PM " + std::to_string(m_vmIndex[pd.vm->getID()].first) + " to PM " + std::to_string(pd.pmId));
             scheduleMigration(engine, pd.vm->getID(), pd.pmId);
         }
     }
@@ -251,7 +251,7 @@ bool DataCenter::updateVM(int vmId, double utilization)
 
     PhysicalMachine *pm = findPM(pmId);
     pm->free(oldUsage);
-    // std::cout << "[DataCenter] Updating VM " << vmId << " on PM " << pmId << " - new usage: " << vmPtr->getUsage() << " - available: " << pm->getFreeResources() << std::endl;
+    LogManager::instance().log(LogCategory::VM_UTIL_UPDATE, "VM " + std::to_string(vmId) + " updated on PM " + std::to_string(pmId) + " - new usage: " + "0" + " - available: " + "0"); // TODO
     if (!pm->canHost(vmPtr->getUsage()))
     {
         // std::cerr << "[WARN] new usage doesn't fit on pm" << pmId << std::endl;
@@ -324,18 +324,4 @@ PhysicalMachine *DataCenter::findPM(int pmID) const
     }
 
     return const_cast<PhysicalMachine *>(&(*it));
-}
-
-void DataCenter::printUsageSummary() const
-{
-    for (auto &pm : m_physicalMachines)
-    {
-        auto freeRes = pm.getFreeResources();
-        std::cout << "PM" << pm.getID() << ": freeCPU =" << freeRes.cpu
-                  << " freeRAM =" << freeRes.ram
-                  << " freeDisk =" << freeRes.disk
-                  << " freeBW =" << freeRes.bandwidth
-                  << " freeFPGA =" << freeRes.fpga
-                  << std::endl;
-    }
 }

@@ -49,7 +49,7 @@ void SimulationEngine::runLoop()
 
         if (t < m_currentTime)
         {
-            std::cerr << "[SimulationEngine] Event from the past: " << t << " < " << m_currentTime << std::endl;
+            LogManager::instance().log(LogCategory::DEBUG, "Event from the past: " + std::to_string(t) + " < " + std::to_string(m_currentTime));
             throw std::runtime_error("Event from the past");
             continue;
         }
@@ -59,5 +59,5 @@ void SimulationEngine::runLoop()
         // Single-thread event processing
         evt->accept(m_dataCenter, *this);
     }
-    std::cout << "[SimulationEngine] Thread stopped.\n";
+    LogManager::instance().log(LogCategory::DEBUG, "SimulationEngine thread stopped");
 }

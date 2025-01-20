@@ -10,6 +10,7 @@
 #include "events/VMDepartureEvent.h"
 #include "events/MigrationCompleteEvent.h"
 #include "strategies/StrategyFactory.h"
+#include "logging/LogManager.h"
 
 class SimulationEngine;
 
@@ -26,9 +27,6 @@ public:
     void handle(const MigrationCompleteEvent &event, SimulationEngine &engine);
 
     void addPhysicalMachine(const PhysicalMachine &pm);
-
-    // For final usage
-    void printUsageSummary() const;
 
     // Called by the simulation or externally
     void setPlacementStrategy(IPlacementStrategy *strategy);

@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QComboBox>
 #include "SimulatorController.h"
+#include "LoggingPanel.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -30,8 +31,11 @@ private slots:
     void on_btnStart_clicked();
     void on_btnStop_clicked();
     void on_bundleSizeSpinBox_valueChanged(int arg1);
+    // This slot is triggered by actionLoggingSettings
+    void on_actionLoggingSettings_triggered();
     void onStrategyChanged(int index);
     void onApplyStrategyButtonClicked();
+    void onShowLoggingPanelClicked();
 
     // For real-time updates
     void onUpdateTimerTimeout();
@@ -52,4 +56,6 @@ private:
 
     IPlacementStrategy *m_currentStrategy;
     QWidget *m_currentConfigWidget;
+
+    LoggingPanel *m_loggingPanel;
 };
