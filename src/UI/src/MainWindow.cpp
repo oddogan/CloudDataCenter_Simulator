@@ -10,7 +10,7 @@
 #include "strategies/StrategyFactory.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), m_cpuSeries(new QLineSeries(this)), m_ramSeries(new QLineSeries(this)), m_diskSeries(new QLineSeries(this)), m_bandwidthSeries(new QLineSeries(this)), m_axisX(new QValueAxis(this)), m_axisY(new QValueAxis(this)), m_startTime(0.0), m_currentStrategy(nullptr), m_currentConfigWidget(nullptr)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_cpuSeries(new QLineSeries(this)), m_ramSeries(new QLineSeries(this)), m_diskSeries(new QLineSeries(this)), m_bandwidthSeries(new QLineSeries(this)), m_axisX(new QValueAxis(this)), m_axisY(new QValueAxis(this)), m_startTime(0.0), m_currentStrategy(nullptr), m_currentConfigWidget(nullptr), m_loggingPanel(nullptr)
 {
     ui->setupUi(this);
 
@@ -74,6 +74,9 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::onApplyStrategyButtonClicked);
 
+    connect(ui->actionLoggingSettings, &QAction::triggered,
+            this, &MainWindow::on_actionLoggingSettings_triggered);
+
     // select first strategy
     ui->strategyComboBox->setCurrentIndex(0);
     onStrategyChanged(0);
@@ -81,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete m_loggingPanel;
     delete ui;
 }
 
@@ -113,6 +117,22 @@ void MainWindow::on_btnStop_clicked()
 void MainWindow::on_bundleSizeSpinBox_valueChanged(int arg1)
 {
     m_controller.setBundleSize(arg1);
+}
+
+void MainWindow::on_actionLoggingSettings_triggered()
+{
+    // If we haven't created the panel yet, create it
+    if (!m_loggingPanel)
+    {
+        m_loggingPanel = new LoggingPanel(this);
+        // m_loggingPanel->setWindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint);
+        // m_loggingPanel->setMinimumSize(600, 400);
+    }
+
+    // Show it
+    m_loggingPanel->show();
+    m_loggingPanel->raise();
+    m_loggingPanel->activateWindow();
 }
 
 void MainWindow::onStrategyChanged(int index)
@@ -172,6 +192,17 @@ void MainWindow::onApplyStrategyButtonClicked()
     m_currentStrategy = nullptr;
 
     qDebug() << "[MainWindow] Strategy applied to DataCenter.";
+}
+
+void MainWindow::onShowLoggingPanelClicked()
+{
+    if (!m_loggingPanel)
+    {
+        m_loggingPanel = new LoggingPanel(this);
+    }
+    m_loggingPanel->show();
+    m_loggingPanel->raise();
+    m_loggingPanel->activateWindow();
 }
 
 void MainWindow::onUpdateTimerTimeout()
