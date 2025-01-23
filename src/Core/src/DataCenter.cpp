@@ -53,6 +53,12 @@ void DataCenter::setPlacementStrategy(IPlacementStrategy *strat)
     m_strategy = strat;
 }
 
+IPlacementStrategy *DataCenter::getPlacementStrategy() const
+{
+    std::lock_guard<std::mutex> lock(m_strategyMutex);
+    return m_strategy;
+}
+
 void DataCenter::addPhysicalMachine(const PhysicalMachine &pm)
 {
     m_physicalMachines.push_back(pm);
