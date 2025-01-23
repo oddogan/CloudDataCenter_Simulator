@@ -8,6 +8,8 @@
 class ConfigurationDock;
 class LoggingDock;
 class StatusDock;
+class MachineDock;
+class MachineHeatmapDock;
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -32,12 +34,14 @@ private slots:
     void on_actionAbout_triggered();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow *ui{nullptr};
 
-    ConfigurationDock *m_configDock;
-    LoggingDock *m_loggingDock;
-    StatusDock *m_statusDock;
-    QWidget *m_usageChart;
+    ConfigurationDock *m_configDock{nullptr};
+    LoggingDock *m_loggingDock{nullptr};
+    StatusDock *m_statusDock{nullptr};
+    MachineDock *m_machineDock{nullptr};
+    MachineHeatmapDock *m_heatmapDock{nullptr};
+    QWidget *m_usageChart{nullptr};
 
     TraceReader &m_traceReader;
     SimulationEngine &m_simulationEngine;

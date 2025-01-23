@@ -289,6 +289,20 @@ bool DataCenter::removeVM(int vmId)
     return true;
 }
 
+std::vector<MachineUsageInfo> DataCenter::getMachineUsageInfo() const
+{
+    std::vector<MachineUsageInfo> result;
+    for (const auto &pm : m_physicalMachines)
+    {
+        MachineUsageInfo info;
+        info.machineId = pm.getID();
+        info.total = pm.getTotal();
+        info.used = pm.getUsed();
+        result.push_back(info);
+    }
+    return result;
+}
+
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)
 {
     Resources usage = vm->getUsage();

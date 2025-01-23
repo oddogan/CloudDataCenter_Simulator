@@ -5,6 +5,13 @@
 #include "VirtualMachine.h"
 #include "Resources.h"
 
+struct MachineUsageInfo
+{
+    int machineId;
+    Resources used;
+    Resources total;
+};
+
 class PhysicalMachine
 {
 public:
@@ -86,6 +93,11 @@ public:
     }
 
     const std::vector<VirtualMachine *> &getVirtualMachines() const { return m_virtualMachines; }
+
+    MachineUsageInfo getUsageInfo() const
+    {
+        return {m_ID, m_usedResources, m_totalResources};
+    }
 
 private:
     int m_ID;

@@ -40,6 +40,7 @@ public:
     bool removeVM(int vmId);
 
     const std::vector<PhysicalMachine> &getPhysicalMachines() const { return m_physicalMachines; }
+    std::vector<MachineUsageInfo> getMachineUsageInfo() const;
 
 private:
     void runPlacement(SimulationEngine &engine);

@@ -25,12 +25,16 @@ void StatusDock::createUI()
     m_processedCountLabel = new QLabel("0", container);
     m_remainingCountLabel = new QLabel("0", container);
     m_machineCountLabel = new QLabel("0", container);
+    m_currentStrategyLabel = new QLabel("None", container);
+    m_currentBundleSizeLabel = new QLabel("0", container);
 
     m_formLayout->addRow("Time:", m_timeLabel);
     m_formLayout->addRow("Event count:", m_eventCountLabel);
     m_formLayout->addRow("Processed count:", m_processedCountLabel);
     m_formLayout->addRow("Remaining count:", m_remainingCountLabel);
     m_formLayout->addRow("Machine count:", m_machineCountLabel);
+    m_formLayout->addRow("Current strategy:", m_currentStrategyLabel);
+    m_formLayout->addRow("Current bundle size:", m_currentBundleSizeLabel);
 
     container->setLayout(m_formLayout);
     setWidget(container);
@@ -48,6 +52,8 @@ void StatusDock::updateStatus()
     m_processedCountLabel->setText(QString::number(m_status->getProcessedEventCount()));
     m_remainingCountLabel->setText(QString::number(m_status->getRemainingEventCount()));
     m_machineCountLabel->setText(QString::number(m_status->getMachineCount()));
+    m_currentStrategyLabel->setText(QString::fromStdString(m_status->getCurrentStrategy()));
+    m_currentBundleSizeLabel->setText(QString::number(m_status->getCurrentBundleSize()));
 }
 
 void StatusDock::onTimer()

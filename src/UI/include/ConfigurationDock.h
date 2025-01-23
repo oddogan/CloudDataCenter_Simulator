@@ -44,5 +44,5 @@ private:
 
     void createUI();
     void loadStrategyList();
-    void clearCurrentStrategy();
+    void clearCurrentStrategy(bool deleteStrategy);
 };
