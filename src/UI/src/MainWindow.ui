@@ -1,116 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
     <class>MainWindow</class>
+
     <widget class="QMainWindow" name="MainWindow">
         <property name="windowTitle">
-            <string>Cloud Data Center Simulator</string>
+            <string>VM Consolidation Modern UI</string>
         </property>
-    <widget class="QWidget" name="centralwidget">
-        <layout class="QVBoxLayout" name="verticalLayout">
-            <!-- Row with "Start" and "Stop" buttons, and "Load Trace" -->
-            <item>
-                <layout class="QHBoxLayout" name="startStopLayout">
-                    <item>
-                        <widget class="QPushButton" name="btnLoadTrace">
-                            <property name="text">
-                                <string>Load Trace</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item>
-                        <widget class="QPushButton" name="btnStart">
-                            <property name="text">
-                                <string>Start</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item>
-                        <widget class="QPushButton" name="btnStop">
-                            <property name="text">
-                                <string>Stop</string>
-                            </property>
-                        </widget>
-                    </item>
-                </layout>
-            </item>
-            <!-- Row with strategy combo + "Apply" button -->
-            <item>
-                <layout class="QHBoxLayout" name="strategyLayout">
-                    <item>
-                        <widget class="QLabel" name="strategyLabel">
-                            <property name="text">
-                                <string>Strategy:</string>
-                            </property>
-                        </widget>
-                    </item>
-                    <item>
-                        <widget class="QComboBox" name="strategyComboBox"/>
-                    </item>
-                    <item>
-                        <widget class="QPushButton" name="applyStrategyButton">
-                            <property name="text">
-                                <string>Apply</string>
-                            </property>
-                        </widget>
-                    </item>
-                </layout>
-            </item>
 
-            <!-- A container for the config widget -->
-            <item>
-                <widget class="QWidget" name="strategyConfigContainer">
-                    <property name="minimumSize">
-                        <size>
-                            <width>400</width>
-                            <height>100</height>
-                        </size>
-                    </property>
-                </widget>
-            </item>
+        <widget class="QWidget" name="centralwidget" />
 
-            <!-- The usage chart -->
-            <item>
-                <widget class="QChartView" name="chartView">
-                    <property name="minimumSize">
-                        <size>
-                            <width>600</width>
-                            <height>300</height>
-                        </size>
-                    </property>
-                </widget>
-            </item>
-            </layout>
+        <widget class="QMenuBar" name="menubar">
+            <widget class="QMenu" name="menuFile">
+                <property name="title">
+                    <string>File</string>
+                </property>
+                <addaction name="actionOpenTrace" />
+                <addaction name="actionStartSimulation" />
+                <addaction name="actionStopSimulation" />
+                <addaction name="actionQuit" />
+            </widget>
+            <widget class="QMenu" name="menuView">
+                <property name="title">
+                    <string>View</string>
+                </property>
+            </widget>
+            <widget class="QMenu" name="menuHelp">
+                <property name="title">
+                    <string>Help</string>
+                </property>
+                <addaction name="actionAbout" />
+            </widget>
+            <addaction name="menuFile" />
+            <addaction name="menuView" />
+            <addaction name="menuHelp" />
         </widget>
-        <!-- Menu Bar -->
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>600</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuTools">
-    <property name="title">
-     <string>Tools</string>
-    </property>
-    <addaction name="actionLoggingSettings"/>
-   </widget>
-   <addaction name="menuTools"/>
-  </widget>
+        
+        <widget class="QStatusBar" name="statusbar" />
 
-  <!-- The statusbar if needed -->
-  <widget class="QStatusBar" name="statusbar"/>
+        <!-- Actions -->
+        <action name="actionOpenTrace">
+            <property name="text">
+                <string>Open Trace...</string>
+            </property>
+            <property name="shortcut">
+                <string>o</string>
+            </property>
+        </action>
+        <action name="actionStartSimulation">
+            <property name="text">
+                <string>Start Simulation</string>
+            </property>
+        </action>
+        <action name="actionStopSimulation">
+            <property name="text">
+                <string>Stop Simulation</string>
+            </property>
+        </action>
+        <action name="actionQuit">
+            <property name="text">
+                <string>Quit</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Q</string>
+            </property>
+        </action>
+        <action name="actionAbout">
+            <property name="text">
+                <string>About...</string>
+            </property>
+        </action>
 
-  <!-- The action for Logging Settings... -->
-  <action name="actionLoggingSettings">
-   <property name="text">
-    <string>Logging Settings...</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::NoRole</enum>
-   </property>
-  </action>
     </widget>
 </ui>

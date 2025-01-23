@@ -1,15 +1,13 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QTimer>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QChartView>
-#include <QtCharts/QValueAxis>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QComboBox>
-#include "SimulatorController.h"
-#include "LoggingPanel.h"
+#include <QDockWidget>
+#include "Core/include/TraceReader.h"
+#include "Core/include/SimulationEngine.h"
+
+// Forward declares for our custom docks
+class StrategyConfigDock;
+class LoggingDock;
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -23,39 +21,27 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
-    void on_btnLoadTrace_clicked();
-    void on_btnStart_clicked();
-    void on_btnStop_clicked();
-    void on_bundleSizeSpinBox_valueChanged(int arg1);
-    // This slot is triggered by actionLoggingSettings
-    void on_actionLoggingSettings_triggered();
-    void onStrategyChanged(int index);
-    void onApplyStrategyButtonClicked();
-    void onShowLoggingPanelClicked();
-
-    // For real-time updates
-    void onUpdateTimerTimeout();
+    void on_actionOpenTrace_triggered();
+    void on_actionStartSimulation_triggered();
+    void on_actionStopSimulation_triggered();
+    void on_actionQuit_triggered();
+    void on_actionAbout_triggered();
 
 private:
     Ui::MainWindow *ui;
-    SimulatorController m_controller;
 
-    QLineSeries *m_cpuSeries;
-    QLineSeries *m_ramSeries;
-    QLineSeries *m_diskSeries;
-    QLineSeries *m_bandwidthSeries;
-    QValueAxis *m_axisX;
-    QValueAxis *m_axisY;
+    StrategyConfigDock *m_strategyDock;
+    LoggingDock *m_loggingDock;
+    QWidget *m_usageChart;
 
-    QTimer m_updateTimer;
-    double m_startTime;
+    TraceReader &m_traceReader;
+    SimulationEngine &m_simulationEngine;
 
-    IPlacementStrategy *m_currentStrategy;
-    QWidget *m_currentConfigWidget;
-
-    LoggingPanel *m_loggingPanel;
+    void setupDocks();
+    void setupCentralWidget();
+    void setupViewMenu();
 };

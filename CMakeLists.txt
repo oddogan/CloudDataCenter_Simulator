@@ -20,6 +20,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_executable(${PROJECT_NAME} "")
 
 # Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/UI/include")
 

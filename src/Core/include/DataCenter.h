@@ -17,7 +17,7 @@ class SimulationEngine;
 class DataCenter
 {
 public:
-    DataCenter(IPlacementStrategy *strategy, size_t bundleSize = 1);
+    DataCenter();
     ~DataCenter();
 
     // Handle each event type
