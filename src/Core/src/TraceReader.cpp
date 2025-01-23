@@ -8,9 +8,10 @@
 #include "events/VMUtilUpdateEvent.h"
 #include "data/VirtualMachine.h"
 #include "data/Resources.h"
+#include "logging/LogManager.h"
 
-TraceReader::TraceReader(const std::string &filename, ConcurrentEventQueue &q)
-    : m_filename(filename), m_queue(q), m_stop(false)
+TraceReader::TraceReader(ConcurrentEventQueue &q)
+    : m_queue(q), m_stop(false)
 {
 }
 
@@ -19,27 +20,29 @@ TraceReader::~TraceReader()
     stop();
 }
 
-void TraceReader::start()
-{
-    m_stop = false;
-    m_thread = std::thread(&TraceReader::parsingLoop, this);
-}
-
 void TraceReader::stop()
 {
     m_stop = true;
-    if (m_thread.joinable())
+    for (auto &info : m_traces)
     {
-        m_thread.join();
+        if (info.parserThread.joinable())
+        {
+            info.parserThread.join();
+        }
     }
 }
 
-void TraceReader::parsingLoop()
+void TraceReader::readTraceFile(const std::string &filename)
 {
-    std::ifstream file(m_filename);
+    m_traces.push_back({filename, std::thread(&TraceReader::parsingLoop, this, filename)});
+}
+
+void TraceReader::parsingLoop(const std::string &filename)
+{
+    std::ifstream file(filename);
     if (!file.is_open())
     {
-        std::cerr << "[TraceReader] Could not open " << m_filename << std::endl;
+        std::cerr << "[TraceReader] Could not open " << filename << std::endl;
         return;
     }
     while (!m_stop)
@@ -54,8 +57,7 @@ void TraceReader::parsingLoop()
             continue;
         }
         std::stringstream ss(line);
-        // Example format:
-        // requestId, reqType, t_start, duration, c, r, d, b, f, valSize, ...
+
         int reqId, reqType;
         ss >> reqId;
         ss.ignore(1);
@@ -111,6 +113,8 @@ void TraceReader::parsingLoop()
             // push event
             auto evt = std::make_shared<VMRequestEvent>(tstart, std::move(vm));
             m_queue.push(evt);
+
+            LogManager::instance().log(LogCategory::TRACE, "VM request " + std::to_string(reqId) + " at " + std::to_string(tstart) + " duration " + std::to_string(duration) + " CPU: " + std::to_string(c) + " RAM: " + std::to_string(r) + " Disk: " + std::to_string(d) + " BW: " + std::to_string(b) + " FPGA: " + std::to_string(f));
         }
         else
         {

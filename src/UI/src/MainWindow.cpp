@@ -1,226 +1,109 @@
 #include "MainWindow.h"
-#include "ui_mainwindow.h"
+#include "ui_MainWindow.h"
 
-#include <QFileDialog>
 #include <QMessageBox>
-#include <QtCharts/QChart>
+#include <QDockWidget>
+#include <QMenu>
+#include <QFileDialog>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
 
-#include <algorithm>
+#include "StrategyConfigDock.h"
+#include "LoggingDock.h"
 
-#include "strategies/StrategyFactory.h"
-
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), m_cpuSeries(new QLineSeries(this)), m_ramSeries(new QLineSeries(this)), m_diskSeries(new QLineSeries(this)), m_bandwidthSeries(new QLineSeries(this)), m_axisX(new QValueAxis(this)), m_axisY(new QValueAxis(this)), m_startTime(0.0), m_currentStrategy(nullptr), m_currentConfigWidget(nullptr), m_loggingPanel(nullptr)
+MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_strategyDock(nullptr), m_loggingDock(nullptr), m_usageChart(nullptr), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
 {
     ui->setupUi(this);
 
-    // Create chart
-    auto *chart = new QChart();
-    chart->addSeries(m_cpuSeries);
-    chart->addSeries(m_ramSeries);
-    chart->addSeries(m_diskSeries);
-    chart->addSeries(m_bandwidthSeries);
+    /*
+    connect(ui->actionOpenTrace, &QAction::triggered, this, &MainWindow::on_actionOpenTrace_triggered);
+    connect(ui->actionStartSimulation, &QAction::triggered, this, &MainWindow::on_actionStartSimulation_triggered);
+    connect(ui->actionStopSimulation, &QAction::triggered, this, &MainWindow::on_actionStopSimulation_triggered);
+    connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::on_actionQuit_triggered);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::on_actionAbout_triggered);
+    */
 
-    chart->addAxis(m_axisX, Qt::AlignBottom);
-    chart->addAxis(m_axisY, Qt::AlignLeft);
+    setupDocks();
+    setupCentralWidget();
+    setupViewMenu();
 
-    m_cpuSeries->attachAxis(m_axisX);
-    m_cpuSeries->attachAxis(m_axisY);
-
-    m_ramSeries->attachAxis(m_axisX);
-    m_ramSeries->attachAxis(m_axisY);
-
-    m_diskSeries->attachAxis(m_axisX);
-    m_diskSeries->attachAxis(m_axisY);
-
-    m_bandwidthSeries->attachAxis(m_axisX);
-    m_bandwidthSeries->attachAxis(m_axisY);
-
-    m_cpuSeries->setName("CPU Usage");
-    m_ramSeries->setName("RAM Usage");
-    m_diskSeries->setName("Disk Usage");
-    m_bandwidthSeries->setName("Bandwidth Usage");
-
-    m_axisX->setTitleText("Time (s)");
-    m_axisY->setTitleText("Usage (%)");
-
-    m_axisX->setRange(0, 500);
-    m_axisY->setRange(0, 100);
-
-    m_axisX->setTickCount(10);
-    m_axisY->setTickCount(10);
-
-    chart->setTitle("Real-Time Usage");
-    ui->chartView->setChart(chart);
-
-    // Update timer
-    connect(&m_updateTimer, &QTimer::timeout,
-            this, &MainWindow::onUpdateTimerTimeout);
-    m_updateTimer.start(10); // 1-second updates
-
-    // Fill strategy combo
-    auto names = StrategyFactory::availableStrategies();
-    for (auto &n : names)
-    {
-        ui->strategyComboBox->addItem(n);
-    }
-    // connect signals
-    connect(ui->strategyComboBox,
-            QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &MainWindow::onStrategyChanged);
-
-    connect(ui->applyStrategyButton,
-            &QPushButton::clicked,
-            this,
-            &MainWindow::onApplyStrategyButtonClicked);
-
-    connect(ui->actionLoggingSettings, &QAction::triggered,
-            this, &MainWindow::on_actionLoggingSettings_triggered);
-
-    // select first strategy
-    ui->strategyComboBox->setCurrentIndex(0);
-    onStrategyChanged(0);
+    resize(1000, 700);
 }
 
 MainWindow::~MainWindow()
 {
-    delete m_loggingPanel;
     delete ui;
 }
 
-void MainWindow::on_btnLoadTrace_clicked()
+void MainWindow::setupDocks()
 {
-    QString file = QFileDialog::getOpenFileName(this, "Open Trace File", "", "*.txt *.csv");
-    if (file.isEmpty())
+    m_strategyDock = new StrategyConfigDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_strategyDock);
+
+    m_loggingDock = new LoggingDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_loggingDock);
+
+    m_strategyDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_loggingDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+}
+
+void MainWindow::setupCentralWidget()
+{
+    // usage chart
+    auto chart = new QChart();
+    chart->setTitle("Resource Utilizations");
+    auto chartView = new QChartView(chart, this);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    m_usageChart = chartView;
+    setCentralWidget(m_usageChart);
+}
+
+void MainWindow::setupViewMenu()
+{
+    QMenu *vMenu = ui->menuView;
+    if (!vMenu)
         return;
 
-    m_controller.stopSimulation(); // in case
-    m_controller.initialize(file);
-    QMessageBox::information(this, "Load Trace", "Trace loaded: " + file);
+    QAction *stratDockToggle = m_strategyDock->toggleViewAction();
+    stratDockToggle->setText("Strategy Config Dock");
+    QAction *logDockToggle = m_loggingDock->toggleViewAction();
+    logDockToggle->setText("Logging Dock");
+
+    vMenu->addAction(stratDockToggle);
+    vMenu->addAction(logDockToggle);
 }
 
-void MainWindow::on_btnStart_clicked()
+void MainWindow::on_actionOpenTrace_triggered()
 {
-    m_cpuSeries->clear();
-    m_ramSeries->clear();
-    m_diskSeries->clear();
-    m_bandwidthSeries->clear();
-    m_startTime = 0.0;
-    m_controller.startSimulation();
-}
-
-void MainWindow::on_btnStop_clicked()
-{
-    m_controller.stopSimulation();
-}
-
-void MainWindow::on_bundleSizeSpinBox_valueChanged(int arg1)
-{
-    m_controller.setBundleSize(arg1);
-}
-
-void MainWindow::on_actionLoggingSettings_triggered()
-{
-    // If we haven't created the panel yet, create it
-    if (!m_loggingPanel)
+    QString file = QFileDialog::getOpenFileName(this, "Open Trace", "", "*.txt *.csv");
+    if (!file.isEmpty())
     {
-        m_loggingPanel = new LoggingPanel(this);
-        // m_loggingPanel->setWindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint);
-        // m_loggingPanel->setMinimumSize(600, 400);
+        QMessageBox::information(this, "Trace", "Trace loaded: " + file);
+        m_traceReader.readTraceFile(file.toStdString());
     }
-
-    // Show it
-    m_loggingPanel->show();
-    m_loggingPanel->raise();
-    m_loggingPanel->activateWindow();
 }
 
-void MainWindow::onStrategyChanged(int index)
+void MainWindow::on_actionStartSimulation_triggered()
 {
-    QString name = ui->strategyComboBox->itemText(index);
-
-    // Make a new strategy
-    IPlacementStrategy *newStrategy = StrategyFactory::create(name);
-
-    // Make its config widget
-    QWidget *w = newStrategy->createConfigWidget(this);
-
-    // Remove old widget from layout if any
-    if (m_currentConfigWidget)
-    {
-        // find layout in strategyConfigContainer
-        auto layout = ui->strategyConfigContainer->layout();
-        if (layout)
-        {
-            layout->removeWidget(m_currentConfigWidget);
-        }
-        m_currentConfigWidget->deleteLater();
-        m_currentConfigWidget = nullptr;
-    }
-
-    // If no layout yet, create one
-    if (!ui->strategyConfigContainer->layout())
-    {
-        auto vbox = new QVBoxLayout(ui->strategyConfigContainer);
-        ui->strategyConfigContainer->setLayout(vbox);
-    }
-    ui->strategyConfigContainer->layout()->addWidget(w);
-    m_currentConfigWidget = w;
-
-    // If we had an old strategy not applied to DataCenter, delete it
-    if (m_currentStrategy)
-    {
-        delete m_currentStrategy;
-        m_currentStrategy = nullptr;
-    }
-
-    m_currentStrategy = newStrategy;
+    m_simulationEngine.start();
+    QMessageBox::information(this, "Simulation", "Simulation started.");
 }
 
-// When user clicks "Apply", we finalize and tell DataCenter
-void MainWindow::onApplyStrategyButtonClicked()
+void MainWindow::on_actionStopSimulation_triggered()
 {
-    if (!m_currentStrategy)
-        return;
-    // let the strategy read from its widget
-    m_currentStrategy->applyConfigFromUI();
-
-    // Now pass it to data center. We assume dataCenter takes ownership
-    m_controller.setStrategy(m_currentStrategy);
-
-    // So we don't double delete
-    m_currentStrategy = nullptr;
-
-    qDebug() << "[MainWindow] Strategy applied to DataCenter.";
+    m_simulationEngine.stop();
+    QMessageBox::information(this, "Simulation", "Simulation stopped.");
 }
 
-void MainWindow::onShowLoggingPanelClicked()
+void MainWindow::on_actionQuit_triggered()
 {
-    if (!m_loggingPanel)
-    {
-        m_loggingPanel = new LoggingPanel(this);
-    }
-    m_loggingPanel->show();
-    m_loggingPanel->raise();
-    m_loggingPanel->activateWindow();
+    close();
 }
 
-void MainWindow::onUpdateTimerTimeout()
+void MainWindow::on_actionAbout_triggered()
 {
-    auto [t, perResources] = m_controller.getUsageSnapshot();
-    m_cpuSeries->append(t, perResources.cpu);
-    m_ramSeries->append(t, perResources.ram);
-    m_diskSeries->append(t, perResources.disk);
-    m_bandwidthSeries->append(t, perResources.bandwidth);
-
-    // Adjust axis if needed
-    if (t > m_axisX->max())
-    {
-        m_axisX->setRange(0, t + 100);
-    }
-    double maxUsage = std::max(std::max(std::max(perResources.cpu, perResources.ram), perResources.disk), perResources.bandwidth);
-    if (maxUsage > m_axisY->max())
-    {
-        m_axisY->setRange(m_axisY->min(), maxUsage + 10);
-    }
+    QMessageBox::about(this, "About",
+                       "Real-Time Cloud Data Center Simulator");
 }

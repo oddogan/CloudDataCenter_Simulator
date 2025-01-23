@@ -3,21 +3,29 @@
 #include <chrono>
 #include <ctime>
 
+// We'll define a static array for category info
+static const LogCategoryInfo s_categories[] = {
+    {LogCategory::PLACEMENT, "VM Placement"},
+    {LogCategory::VM_ARRIVAL, "VM Arrival"},
+    {LogCategory::VM_DEPARTURE, "VM Departure"},
+    {LogCategory::VM_MIGRATION, "Migration"},
+    {LogCategory::VM_UTIL_UPDATE, "VM Util Update"},
+    {LogCategory::TRACE, "Trace Info"},
+    {LogCategory::DEBUG, "Debug"}};
+
 LogManager &LogManager::instance()
 {
     static LogManager instance;
     return instance;
 }
 
-LogManager::LogManager() : m_currentLogFile("")
+LogManager::LogManager() : m_currentLogFile(""), m_logToConsole(true)
 {
-    m_categoriesEnabled[LogCategory::PLACEMENT] = false;
-    m_categoriesEnabled[LogCategory::VM_ARRIVAL] = false;
-    m_categoriesEnabled[LogCategory::VM_DEPARTURE] = false;
-    m_categoriesEnabled[LogCategory::VM_MIGRATION] = false;
-    m_categoriesEnabled[LogCategory::VM_UTIL_UPDATE] = false;
-    m_categoriesEnabled[LogCategory::TRACE] = false;
-    m_categoriesEnabled[LogCategory::DEBUG] = false;
+    // default all to false
+    for (auto &info : s_categories)
+    {
+        m_categoriesEnabled[info.cat] = false;
+    }
 }
 
 LogManager::~LogManager()
@@ -28,6 +36,28 @@ LogManager::~LogManager()
     }
 }
 
+// Return a vector of categories
+std::vector<LogCategoryInfo> LogManager::getAllCategories() const
+{
+    std::vector<LogCategoryInfo> result;
+    for (auto &c : s_categories)
+    {
+        result.push_back(c);
+    }
+    return result;
+}
+
+std::string LogManager::getCategoryDisplayName(LogCategory cat) const
+{
+    for (auto &c : s_categories)
+    {
+        if (c.cat == cat)
+        {
+            return c.displayName;
+        }
+    }
+    return "Unknown";
+}
 void LogManager::setLogFile(const std::string &filename)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -52,6 +82,12 @@ void LogManager::setCategoryEnabled(LogCategory cat, bool enabled)
     m_categoriesEnabled[cat] = enabled;
 }
 
+void LogManager::setLogToConsole(bool enabled)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_logToConsole = enabled;
+}
+
 bool LogManager::isCategoryEnabled(LogCategory cat) const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -69,31 +105,43 @@ std::string LogManager::getLogFile() const
     return m_currentLogFile;
 }
 
-void LogManager::log(LogCategory cat, const std::string &msg)
+bool LogManager::getLogToConsole() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+    return m_logToConsole;
+}
 
-    // If not enabled, don't log
+void LogManager::log(LogCategory cat, const std::string &msg)
+{
+    // check if enabled
+    std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_categoriesEnabled.find(cat);
     if (it == m_categoriesEnabled.end() || !it->second)
     {
-        return;
+        return; // not enabled
     }
 
-    // If no file open, fallback to stdout
-    if (!m_logFile.is_open())
-    {
-        std::cerr << "[" << categoryName(cat) << "] " << msg << std::endl;
-        return;
-    }
-
-    // Add timestamp
+    // timestamp
     auto now = std::chrono::system_clock::now();
     auto timeT = std::chrono::system_clock::to_time_t(now);
+    // e.g. "Mon Nov 13 14:15:32 2023"
+    // We'll remove the trailing newline
+    std::string ts = std::ctime(&timeT);
+    if (!ts.empty() && ts.back() == '\n')
+        ts.pop_back();
 
-    // Format
-    m_logFile << "[" << std::ctime(&timeT);
-    m_logFile.seekp(-2, std::ios_base::cur); // remove newline from ctime
-    m_logFile << " - " << categoryName(cat) << "] " << msg << std::endl;
-    m_logFile.flush();
+    // find displayName
+    std::string catName = getCategoryDisplayName(cat);
+    std::string logMessage = "[" + ts + " - " + catName + "] " + msg + "\n";
+
+    if (m_logToConsole)
+    {
+        std::cout << logMessage;
+    }
+
+    if (m_logFile.is_open())
+    {
+        m_logFile << logMessage;
+        m_logFile.flush();
+    }
 }

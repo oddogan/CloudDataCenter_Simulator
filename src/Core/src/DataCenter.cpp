@@ -5,9 +5,12 @@
 #include <algorithm>
 #include <iostream>
 
-DataCenter::DataCenter(IPlacementStrategy *initStrat, size_t bundleSize)
-    : m_strategy(initStrat), m_bundleSize(bundleSize)
+DataCenter::DataCenter()
+    : m_strategy(nullptr), m_bundleSize(1)
 {
+    // Default strategy
+    setPlacementStrategy(StrategyFactory::create("FirstFitDecreasing"));
+    setBundleSize(1);
 }
 
 DataCenter::~DataCenter()
@@ -142,7 +145,7 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         if (pd.pmId < 0)
         {
             LogManager::instance().log(LogCategory::PLACEMENT, "No fit for VM " + std::to_string(pd.vm->getID()));
-            throw std::runtime_error("No fit for VM");
+            throw std::runtime_error("No fit for VM " + std::to_string(pd.vm->getID()));
         }
         else
         {
