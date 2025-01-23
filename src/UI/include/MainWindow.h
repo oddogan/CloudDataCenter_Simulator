@@ -2,6 +2,8 @@
 
 #include <QMainWindow>
 #include <QDockWidget>
+#include <QSettings>
+#include <QCloseEvent>
 #include "Core/include/TraceReader.h"
 #include "Core/include/SimulationEngine.h"
 
@@ -10,6 +12,7 @@ class LoggingDock;
 class StatusDock;
 class MachineDock;
 class MachineHeatmapDock;
+class UsageGraphDock;
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -41,7 +44,7 @@ private:
     StatusDock *m_statusDock{nullptr};
     MachineDock *m_machineDock{nullptr};
     MachineHeatmapDock *m_heatmapDock{nullptr};
-    QWidget *m_usageChart{nullptr};
+    UsageGraphDock *m_usageGraphDock{nullptr};
 
     TraceReader &m_traceReader;
     SimulationEngine &m_simulationEngine;

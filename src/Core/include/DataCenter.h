@@ -41,6 +41,7 @@ public:
 
     const std::vector<PhysicalMachine> &getPhysicalMachines() const { return m_physicalMachines; }
     std::vector<MachineUsageInfo> getMachineUsageInfo() const;
+    Resources getResourceUtilizations() const;
 
 private:
     void runPlacement(SimulationEngine &engine);

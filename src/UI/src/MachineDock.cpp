@@ -5,7 +5,7 @@ MachineDock::MachineDock(ISimulationStatus *status, QWidget *parent)
     m_status = status;
 
     setWindowTitle("Machines");
-    setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
 
     createUI();
 

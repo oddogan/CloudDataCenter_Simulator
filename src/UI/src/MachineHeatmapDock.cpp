@@ -100,12 +100,12 @@ void HeatmapWidget::mouseMoveEvent(QMouseEvent *event)
         return;
 
     auto &info = m_machineInfos[i];
-    double cpuUsage = info.total.cpu > 0 ? (double)info.used.cpu / info.total.cpu : 0.0;
-    double ramUsage = info.total.ram > 0 ? (double)info.used.ram / info.total.ram : 0.0;
-    double diskUsage = info.total.disk > 0 ? (double)info.used.disk / info.total.disk : 0.0;
-    double fpgaUsage = info.total.fpga > 0 ? (double)info.used.fpga / info.total.fpga : 0.0;
+    double cpuUsage = info.total.cpu > 0 ? info.used.cpu / info.total.cpu * 100.0 : 0.0;
+    double ramUsage = info.total.ram > 0 ? info.used.ram / info.total.ram * 100.0 : 0.0;
+    double diskUsage = info.total.disk > 0 ? info.used.disk / info.total.disk * 100.0 : 0.0;
+    double fpgaUsage = info.total.fpga > 0 ? info.used.fpga / info.total.fpga * 100.0 : 0.0;
 
-    QToolTip::showText(event->globalPosition().toPoint(), QString("PM #%1\nCPU: %2\nRAM: %3\nDisk: %4\nFPGA: %5")
+    QToolTip::showText(event->globalPosition().toPoint(), QString("PM #%1\nCPU: %2%\nRAM: %3%\nDisk: %4%\nFPGA: %5%")
                                                               .arg(info.machineId)
                                                               .arg(cpuUsage)
                                                               .arg(ramUsage)

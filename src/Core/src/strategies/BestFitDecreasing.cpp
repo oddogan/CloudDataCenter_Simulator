@@ -13,7 +13,6 @@ BestFitDecreasing::BestFitDecreasing()
 
 BestFitDecreasing::~BestFitDecreasing()
 {
-    delete m_configWidget;
 }
 
 Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)

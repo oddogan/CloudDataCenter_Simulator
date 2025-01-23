@@ -6,11 +6,11 @@
 #include <iostream>
 
 DataCenter::DataCenter()
-    : m_strategy(nullptr), m_bundleSize(1)
+    : m_strategy(nullptr)
 {
     // Default strategy
     setPlacementStrategy(StrategyFactory::create("FirstFitDecreasing"));
-    setBundleSize(1);
+    setBundleSize(10);
 }
 
 DataCenter::~DataCenter()
@@ -300,6 +300,32 @@ std::vector<MachineUsageInfo> DataCenter::getMachineUsageInfo() const
         info.used = pm.getUsed();
         result.push_back(info);
     }
+    return result;
+}
+
+Resources DataCenter::getResourceUtilizations() const
+{
+    Resources result;
+
+    // Result will have the used/total ratio for turned on machines
+    Resources total;
+    Resources used;
+    size_t count = 0;
+    for (const auto &pm : m_physicalMachines)
+    {
+        if (pm.isTurnedOn())
+        {
+            total += pm.getTotal();
+            used += pm.getUsed();
+            count++;
+        }
+    }
+
+    if (count > 0)
+    {
+        result = used / total * 100.0;
+    }
+
     return result;
 }
 

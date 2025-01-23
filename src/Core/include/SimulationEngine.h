@@ -28,6 +28,7 @@ public:
     std::vector<MachineUsageInfo> getMachineUsageInfo() const override { return m_dataCenter.getMachineUsageInfo(); }
     std::string getCurrentStrategy() const override { return m_dataCenter.getPlacementStrategy()->name().toStdString(); }
     size_t getCurrentBundleSize() const override { return m_dataCenter.getBundleSize(); }
+    ResourceUtilizations getResourceUtilizations() const override;
 
     // ISimulationConfiguration
     void setBundleSize(size_t size) override { m_dataCenter.setBundleSize(size); }

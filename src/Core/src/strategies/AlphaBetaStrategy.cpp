@@ -11,9 +11,6 @@ AlphaBetaStrategy::AlphaBetaStrategy()
 
 AlphaBetaStrategy::~AlphaBetaStrategy()
 {
-    // If we created the config widget, Qt will delete it if it has a parent,
-    // but to be safe:
-    delete m_configWidget;
 }
 
 Results AlphaBetaStrategy::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
