@@ -11,9 +11,11 @@
 #include "ConfigurationDock.h"
 #include "LoggingDock.h"
 #include "StatusDock.h"
+#include "MachineDock.h"
+#include "MachineHeatmapDock.h"
 
 MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), m_configDock(nullptr), m_loggingDock(nullptr), m_usageChart(nullptr), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
 {
     ui->setupUi(this);
 
@@ -41,16 +43,23 @@ void MainWindow::setupDocks()
 {
     m_configDock = new ConfigurationDock(&m_simulationEngine, this);
     addDockWidget(Qt::LeftDockWidgetArea, m_configDock);
+    m_configDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     m_loggingDock = new LoggingDock(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_loggingDock);
+    m_loggingDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     m_statusDock = new StatusDock(&m_simulationEngine, this);
     addDockWidget(Qt::BottomDockWidgetArea, m_statusDock);
-
-    m_configDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_loggingDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_statusDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
+
+    m_machineDock = new MachineDock(&m_simulationEngine, this);
+    addDockWidget(Qt::BottomDockWidgetArea, m_machineDock);
+    m_machineDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
+
+    m_heatmapDock = new MachineHeatmapDock(&m_simulationEngine, this);
+    addDockWidget(Qt::BottomDockWidgetArea, m_heatmapDock);
+    m_heatmapDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 }
 
 void MainWindow::setupCentralWidget()

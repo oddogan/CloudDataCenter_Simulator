@@ -25,6 +25,9 @@ public:
     size_t getProcessedEventCount() const override { return m_queue.poppedCount(); }
     size_t getRemainingEventCount() const override { return m_queue.size(); }
     size_t getMachineCount() const override { return m_dataCenter.getPhysicalMachines().size(); }
+    std::vector<MachineUsageInfo> getMachineUsageInfo() const override { return m_dataCenter.getMachineUsageInfo(); }
+    std::string getCurrentStrategy() const override { return m_dataCenter.getPlacementStrategy()->name().toStdString(); }
+    size_t getCurrentBundleSize() const override { return m_dataCenter.getBundleSize(); }
 
     // ISimulationConfiguration
     void setBundleSize(size_t size) override { m_dataCenter.setBundleSize(size); }

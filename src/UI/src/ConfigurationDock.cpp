@@ -15,12 +15,12 @@ ConfigurationDock::ConfigurationDock(ISimulationConfiguration *simulator, QWidge
 
 ConfigurationDock::~ConfigurationDock()
 {
-    clearCurrentStrategy();
+    clearCurrentStrategy(true);
 }
 
 void ConfigurationDock::onStrategyResetClicked()
 {
-    clearCurrentStrategy();
+    clearCurrentStrategy(true);
 
     // Set the strategy combo box to select nothing
     m_strategyCombo->setCurrentIndex(-1);
@@ -87,11 +87,13 @@ void ConfigurationDock::loadStrategyList()
     }
 }
 
-void ConfigurationDock::clearCurrentStrategy()
+void ConfigurationDock::clearCurrentStrategy(bool deleteStrategy)
 {
     if (m_currentStrategy)
     {
-        delete m_currentStrategy;
+        if (deleteStrategy)
+            delete m_currentStrategy;
+
         m_currentStrategy = nullptr;
     }
 
@@ -110,7 +112,7 @@ void ConfigurationDock::onStrategyChanged(int index)
     // pick a new strategy name
     QString name = m_strategyCombo->itemText(index);
     // clear old
-    clearCurrentStrategy();
+    clearCurrentStrategy(true);
 
     // create new
     m_currentStrategy = StrategyFactory::create(name);
@@ -140,6 +142,11 @@ void ConfigurationDock::onStrategyApplyClicked()
 
     qDebug() << "[ConfigurationDock] Strategy apply done for"
              << m_currentStrategy->name();
+    m_simulator->setPlacementStrategy(m_currentStrategy);
+
+    // reset the combo box
+    clearCurrentStrategy(false);
+    m_strategyCombo->setCurrentIndex(-1);
 }
 
 void ConfigurationDock::onBundleSizeApplyClicked()
