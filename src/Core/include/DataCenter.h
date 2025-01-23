@@ -28,11 +28,12 @@ public:
 
     void addPhysicalMachine(const PhysicalMachine &pm);
 
-    // Called by the simulation or externally
     void setPlacementStrategy(IPlacementStrategy *strategy);
+    IPlacementStrategy *getPlacementStrategy() const;
 
     // For bundling
     void setBundleSize(size_t size);
+    size_t getBundleSize() const { return m_bundleSize; }
 
     // Thread-safe updates
     bool updateVM(int vmId, double utilization);

@@ -18,7 +18,7 @@ struct EventComparator
 class ConcurrentEventQueue
 {
 public:
-    ConcurrentEventQueue() : m_terminate(false) {}
+    ConcurrentEventQueue() : m_terminate(false), m_pushCount(0), m_popCount(0) {}
 
     // Producer: push a new event
     void push(std::shared_ptr<IEvent> event)
@@ -26,6 +26,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_queue.push(event);
+            m_pushCount++;
         }
         m_cv.notify_one();
     }
@@ -45,6 +46,8 @@ public:
 
         outEvent = m_queue.top();
         m_queue.pop();
+        m_popCount++;
+
         return true;
     }
 
@@ -58,9 +61,32 @@ public:
         m_cv.notify_all();
     }
 
+    // Returns the number of events in the queue
+    size_t size() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_queue.size();
+    }
+
+    // Returns the number of events popped from the queue
+    size_t poppedCount() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_popCount;
+    }
+
+    // Returns the number of events pushed to the queue
+    size_t pushedCount() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_pushCount;
+    }
+
 private:
     std::priority_queue<std::shared_ptr<IEvent>, std::vector<std::shared_ptr<IEvent>>, EventComparator> m_queue;
     bool m_terminate;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_cv;
+    size_t m_pushCount;
+    size_t m_popCount;
 };

@@ -5,9 +5,9 @@
 #include "Core/include/TraceReader.h"
 #include "Core/include/SimulationEngine.h"
 
-// Forward declares for our custom docks
-class StrategyConfigDock;
+class ConfigurationDock;
 class LoggingDock;
+class StatusDock;
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -34,8 +34,9 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    StrategyConfigDock *m_strategyDock;
+    ConfigurationDock *m_configDock;
     LoggingDock *m_loggingDock;
+    StatusDock *m_statusDock;
     QWidget *m_usageChart;
 
     TraceReader &m_traceReader;

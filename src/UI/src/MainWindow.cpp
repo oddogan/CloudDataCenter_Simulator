@@ -8,11 +8,12 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 
-#include "StrategyConfigDock.h"
+#include "ConfigurationDock.h"
 #include "LoggingDock.h"
+#include "StatusDock.h"
 
 MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), m_strategyDock(nullptr), m_loggingDock(nullptr), m_usageChart(nullptr), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_configDock(nullptr), m_loggingDock(nullptr), m_usageChart(nullptr), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
 {
     ui->setupUi(this);
 
@@ -38,14 +39,18 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupDocks()
 {
-    m_strategyDock = new StrategyConfigDock(this);
-    addDockWidget(Qt::LeftDockWidgetArea, m_strategyDock);
+    m_configDock = new ConfigurationDock(&m_simulationEngine, this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_configDock);
 
     m_loggingDock = new LoggingDock(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_loggingDock);
 
-    m_strategyDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_statusDock = new StatusDock(&m_simulationEngine, this);
+    addDockWidget(Qt::BottomDockWidgetArea, m_statusDock);
+
+    m_configDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_loggingDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_statusDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 }
 
 void MainWindow::setupCentralWidget()
@@ -66,8 +71,8 @@ void MainWindow::setupViewMenu()
     if (!vMenu)
         return;
 
-    QAction *stratDockToggle = m_strategyDock->toggleViewAction();
-    stratDockToggle->setText("Strategy Config Dock");
+    QAction *stratDockToggle = m_configDock->toggleViewAction();
+    stratDockToggle->setText("Configuration Dock");
     QAction *logDockToggle = m_loggingDock->toggleViewAction();
     logDockToggle->setText("Logging Dock");
 
