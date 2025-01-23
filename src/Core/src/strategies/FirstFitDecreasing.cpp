@@ -13,8 +13,6 @@ FirstFitDecreasing::FirstFitDecreasing()
 
 FirstFitDecreasing::~FirstFitDecreasing()
 {
-    // If the widget has a parent, Qt will usually delete it automatically, but let's be safe:
-    delete m_configWidget;
 }
 
 Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)

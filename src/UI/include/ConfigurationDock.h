@@ -28,19 +28,19 @@ private slots:
     void onBundleSizeResetClicked();
 
 private:
-    ISimulationConfiguration *m_simulator;
-    QWidget *m_container;
-    QFormLayout *m_formLayout;
+    ISimulationConfiguration *m_simulator{nullptr};
+    QWidget *m_container{nullptr};
+    QFormLayout *m_formLayout{nullptr};
 
-    QSpinBox *m_bundleSizeSpin;
-    QPushButton *m_bundleSizeApplyButton;
-    QPushButton *m_bundleSizeResetButton;
+    QSpinBox *m_bundleSizeSpin{nullptr};
+    QPushButton *m_bundleSizeApplyButton{nullptr};
+    QPushButton *m_bundleSizeResetButton{nullptr};
 
-    QComboBox *m_strategyCombo;
-    QPushButton *m_strategyApplyBtn;
-    QPushButton *m_strategyResetBtn;
-    IPlacementStrategy *m_currentStrategy;
-    QWidget *m_currentStrategyWidget;
+    QComboBox *m_strategyCombo{nullptr};
+    QPushButton *m_strategyApplyBtn{nullptr};
+    QPushButton *m_strategyResetBtn{nullptr};
+    IPlacementStrategy *m_currentStrategy{nullptr};
+    QWidget *m_currentStrategyWidget{nullptr};
 
     void createUI();
     void loadStrategyList();

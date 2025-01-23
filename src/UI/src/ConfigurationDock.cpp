@@ -5,7 +5,7 @@
 #include "strategies/StrategyFactory.h"
 
 ConfigurationDock::ConfigurationDock(ISimulationConfiguration *simulator, QWidget *parent)
-    : m_simulator(simulator), QDockWidget(parent), m_container(nullptr), m_formLayout(nullptr), m_bundleSizeSpin(nullptr), m_strategyCombo(nullptr), m_strategyApplyBtn(nullptr), m_strategyResetBtn(nullptr), m_currentStrategy(nullptr), m_currentStrategyWidget(nullptr)
+    : m_simulator(simulator), QDockWidget(parent)
 {
     setWindowTitle("Configuration");
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
@@ -89,18 +89,18 @@ void ConfigurationDock::loadStrategyList()
 
 void ConfigurationDock::clearCurrentStrategy(bool deleteStrategy)
 {
+    if (m_currentStrategyWidget)
+    {
+        m_formLayout->removeRow(m_currentStrategyWidget);
+        m_currentStrategyWidget = nullptr;
+    }
+
     if (m_currentStrategy)
     {
         if (deleteStrategy)
             delete m_currentStrategy;
 
         m_currentStrategy = nullptr;
-    }
-
-    if (m_currentStrategyWidget)
-    {
-        m_formLayout->removeWidget(m_currentStrategyWidget);
-        m_currentStrategyWidget = nullptr;
     }
 }
 

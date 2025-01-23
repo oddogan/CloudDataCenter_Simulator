@@ -28,6 +28,14 @@ void SimulationEngine::stop()
     }
 }
 
+ResourceUtilizations SimulationEngine::getResourceUtilizations() const
+{
+    ResourceUtilizations result;
+    result.utilizations = m_dataCenter.getResourceUtilizations();
+    result.time = m_currentTime;
+    return result;
+}
+
 void SimulationEngine::pushEvent(const std::shared_ptr<IEvent> &evt)
 {
     m_queue.push(evt);

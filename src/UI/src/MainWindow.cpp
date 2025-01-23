@@ -13,6 +13,7 @@
 #include "StatusDock.h"
 #include "MachineDock.h"
 #include "MachineHeatmapDock.h"
+#include "UsageGraphDock.h"
 
 MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), m_traceReader(traceReader), m_simulationEngine(simulationEngine)
@@ -31,7 +32,7 @@ MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEng
     setupCentralWidget();
     setupViewMenu();
 
-    resize(1000, 700);
+    resize(1920, 1080);
 }
 
 MainWindow::~MainWindow()
@@ -42,36 +43,36 @@ MainWindow::~MainWindow()
 void MainWindow::setupDocks()
 {
     m_configDock = new ConfigurationDock(&m_simulationEngine, this);
+    m_configDock->setObjectName("ConfigDock");
     addDockWidget(Qt::LeftDockWidgetArea, m_configDock);
     m_configDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     m_loggingDock = new LoggingDock(this);
+    m_loggingDock->setObjectName("LoggingDock");
     addDockWidget(Qt::LeftDockWidgetArea, m_loggingDock);
     m_loggingDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     m_statusDock = new StatusDock(&m_simulationEngine, this);
+    m_statusDock->setObjectName("StatusDock");
     addDockWidget(Qt::BottomDockWidgetArea, m_statusDock);
     m_statusDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 
     m_machineDock = new MachineDock(&m_simulationEngine, this);
+    m_machineDock->setObjectName("MachineDock");
     addDockWidget(Qt::BottomDockWidgetArea, m_machineDock);
     m_machineDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 
     m_heatmapDock = new MachineHeatmapDock(&m_simulationEngine, this);
+    m_heatmapDock->setObjectName("MachineHeatmapDock");
     addDockWidget(Qt::BottomDockWidgetArea, m_heatmapDock);
     m_heatmapDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
+    m_heatmapDock->setMinimumWidth(150);
 }
 
 void MainWindow::setupCentralWidget()
 {
-    // usage chart
-    auto chart = new QChart();
-    chart->setTitle("Resource Utilizations");
-    auto chartView = new QChartView(chart, this);
-    chartView->setRenderHint(QPainter::Antialiasing);
-
-    m_usageChart = chartView;
-    setCentralWidget(m_usageChart);
+    m_usageGraphDock = new UsageGraphDock(&m_simulationEngine, this);
+    setCentralWidget(m_usageGraphDock);
 }
 
 void MainWindow::setupViewMenu()
