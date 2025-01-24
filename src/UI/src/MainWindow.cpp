@@ -57,16 +57,16 @@ void MainWindow::setupDocks()
     addDockWidget(Qt::BottomDockWidgetArea, m_statusDock);
     m_statusDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 
-    m_machineDock = new MachineDock(&m_simulationEngine, this);
-    m_machineDock->setObjectName("MachineDock");
-    addDockWidget(Qt::BottomDockWidgetArea, m_machineDock);
-    m_machineDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
+    // m_machineDock = new MachineDock(&m_simulationEngine, this);
+    // m_machineDock->setObjectName("MachineDock");
+    // addDockWidget(Qt::BottomDockWidgetArea, m_machineDock);
+    // m_machineDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 
     m_heatmapDock = new MachineHeatmapDock(&m_simulationEngine, this);
     m_heatmapDock->setObjectName("MachineHeatmapDock");
-    addDockWidget(Qt::BottomDockWidgetArea, m_heatmapDock);
-    m_heatmapDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
-    m_heatmapDock->setMinimumWidth(150);
+    addDockWidget(Qt::RightDockWidgetArea, m_heatmapDock);
+    m_heatmapDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea | Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_heatmapDock->setMinimumWidth(530);
 }
 
 void MainWindow::setupCentralWidget()

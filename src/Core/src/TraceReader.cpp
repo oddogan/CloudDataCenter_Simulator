@@ -101,9 +101,8 @@ void TraceReader::parsingLoop(const std::string &filename)
             vm->setUtilization(initUtil / 100);
             // parse usage steps
             double step = duration / (valSize > 0 ? valSize : 1);
-            if (valSize == 0)
-                throw std::runtime_error("valSize == 0");
-            for (int i = 0; i < valSize; i++)
+            step = 300; // 5min trace
+            for (int i = 0; i < valSize - 1; i++)
             {
                 double util;
                 ss >> util;

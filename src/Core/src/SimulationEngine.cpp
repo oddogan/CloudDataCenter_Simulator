@@ -41,6 +41,11 @@ void SimulationEngine::pushEvent(const std::shared_ptr<IEvent> &evt)
     m_queue.push(evt);
 }
 
+void SimulationEngine::removeEvents(std::function<bool(const std::shared_ptr<IEvent> &)> predicate)
+{
+    m_queue.remove(predicate);
+}
+
 void SimulationEngine::runLoop()
 {
     while (!m_stop)

@@ -5,7 +5,7 @@
 #include "strategies/StrategyFactory.h"
 
 ConfigurationDock::ConfigurationDock(ISimulationConfiguration *simulator, QWidget *parent)
-    : m_simulator(simulator), QDockWidget(parent)
+    : QDockWidget(parent), m_simulator(simulator)
 {
     setWindowTitle("Configuration");
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);

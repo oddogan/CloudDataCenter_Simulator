@@ -9,7 +9,7 @@ DataCenter::DataCenter()
     : m_strategy(nullptr)
 {
     // Default strategy
-    setPlacementStrategy(StrategyFactory::create("FirstFitDecreasing"));
+    setPlacementStrategy(StrategyFactory::create("ILPStrategy"));
     setBundleSize(10);
 }
 
@@ -92,6 +92,21 @@ void DataCenter::handle(const VMUtilUpdateEvent &event, SimulationEngine &engine
 
 void DataCenter::handle(const VMDepartureEvent &event, SimulationEngine &engine)
 {
+    // If VM was migrating at the time
+    auto vm = m_vmIndex[event.getVmId()].second;
+    if (vm->isMigrating())
+    {
+        // End the migrations in both old and new PMs
+        int oldPmId = vm->getOldPMID();
+        auto &oldPM = m_physicalMachines[oldPmId];
+        oldPM.endMigration();
+        oldPM.removeVM(event.getVmId());
+        auto &newPM = m_physicalMachines[m_vmIndex[event.getVmId()].first];
+        newPM.endMigration();
+
+        LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(event.getVmId()) + " migration cancelled");
+    }
+
     removeVM(event.getVmId());
 
     LogManager::instance().log(LogCategory::VM_DEPARTURE, "VM " + std::to_string(event.getVmId()) + " departed");
@@ -101,34 +116,26 @@ void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &e
 {
     int vmId = event.getVmId();
     int oldPmId = event.getOldPmId();
-    int newPmId = event.getNewPmId();
 
     auto vm = m_vmIndex[vmId].second;
     if (!vm)
     {
-        std::cerr << "[WARN] VM " << vmId << " not found" << std::endl;
+        std::cerr << "[WARN] VM " << vmId << " departed before its migration completion" << std::endl;
         // throw std::runtime_error("VM not found for migration completion");
         return;
     }
 
-    auto &oldPM = m_physicalMachines[oldPmId];
-    auto &newPM = m_physicalMachines[newPmId];
-
-    oldPM.removeVM(vmId);
-    newPM.addVM(vm);
-
-    // update index
-    {
-        std::lock_guard<std::mutex> lock(m_vmIndexMutex);
-        m_vmIndex[vmId].first = newPmId;
-    }
-
     vm->setMigrating(false);
 
-    if (detectOvercommitment(newPmId, engine))
-    {
-        runPlacement(engine);
-    }
+    auto &oldPM = m_physicalMachines[oldPmId];
+    oldPM.endMigration();
+    oldPM.removeVM(vmId);
+
+    // End the migrations in both old and new PMs
+    auto &newPM = m_physicalMachines[event.getNewPmId()];
+    newPM.endMigration();
+
+    LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(vmId) + " migrated from PM " + std::to_string(oldPmId) + " to PM " + std::to_string(event.getNewPmId()));
 }
 
 void DataCenter::runPlacement(SimulationEngine &engine)
@@ -161,12 +168,13 @@ void DataCenter::runPlacement(SimulationEngine &engine)
     }
 
     // Handle migrations
+    unsigned int numberOfMigrations = decisions.migrationDecision.size();
     for (auto &pd : decisions.migrationDecision)
     {
         if (pd.pmId < 0)
         {
             LogManager::instance().log(LogCategory::VM_MIGRATION, "No migration fit for VM " + std::to_string(pd.vm->getID()));
-            throw std::runtime_error("No migration fit for VM");
+            // throw std::runtime_error("No migration fit for VM");
         }
         else if (pd.pmId == m_vmIndex[pd.vm->getID()].first)
         {
@@ -175,12 +183,12 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         else
         {
             LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(pd.vm->getID()) + " migrating from PM " + std::to_string(m_vmIndex[pd.vm->getID()].first) + " to PM " + std::to_string(pd.pmId));
-            scheduleMigration(engine, pd.vm->getID(), pd.pmId);
+            scheduleMigration(engine, pd.vm->getID(), pd.pmId, numberOfMigrations);
         }
     }
 }
 
-void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_pmID)
+void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_pmID, unsigned int numberOfMigrations)
 {
     int old_pmID = m_vmIndex[vmID].first;
     if (old_pmID == new_pmID)
@@ -195,9 +203,23 @@ void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_p
         throw std::runtime_error("VM not found for migration scheduling");
     }
 
-    // create migration event
     vm->setMigrating(true);
-    double dT = computeMigrationTime(vm);
+
+    auto &newPM = m_physicalMachines[new_pmID];
+    newPM.addVM(vm);
+    // update index
+    {
+        std::lock_guard<std::mutex> lock(m_vmIndexMutex);
+        m_vmIndex[vmID].first = new_pmID;
+    }
+
+    // Start migrations on both old and new PM
+    newPM.startMigration();
+    auto &oldPM = m_physicalMachines[old_pmID];
+    oldPM.startMigration();
+
+    // create migration event
+    double dT = computeMigrationTime(vm, numberOfMigrations);
     double t = engine.currentTime() + dT;
     auto evt = std::make_shared<MigrationCompleteEvent>(t, vmID, old_pmID, new_pmID);
     engine.pushEvent(evt);
@@ -205,21 +227,14 @@ void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_p
 
 bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
 {
-    auto pmIt = std::find_if(m_physicalMachines.begin(), m_physicalMachines.end(),
-                             [pmId](auto &pm)
-                             { return pm.getID() == pmId; });
-    if (pmIt == m_physicalMachines.end())
+    if (m_physicalMachines[pmId].isOvercommitted())
     {
-        return false; // unknown PM
-    }
+        if (m_physicalMachines[pmId].isMigrating())
+        {
+            return false; // already in migration
+        }
 
-    if (pmIt->isOvercommitted())
-    {
-        // Overcommitted.
-        // This is just an example policy:
-
-        std::vector<VirtualMachine *> vmsOnPM = pmIt->getVirtualMachines();
-        // suppose cloneVMList() gives a snapshot of pointers. Or we can store them ourselves.
+        const std::vector<VirtualMachine *> &vmsOnPM = m_physicalMachines[pmId].getVirtualMachines();
 
         // We do a while loop if we want
         for (auto *vm : vmsOnPM)
@@ -237,10 +252,10 @@ bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
     return false;
 }
 
-double DataCenter::computeMigrationTime(VirtualMachine *vm) const
+double DataCenter::computeMigrationTime(VirtualMachine *vm, unsigned int numberOfMigrations) const
 {
     auto usage = vm->getUsage();
-    return (usage.disk / usage.bandwidth);
+    return (usage.disk / (usage.bandwidth / (1000 * numberOfMigrations)));
 }
 
 bool DataCenter::updateVM(int vmId, double utilization)
@@ -250,7 +265,7 @@ bool DataCenter::updateVM(int vmId, double utilization)
     auto it = m_vmIndex.find(vmId);
     if (it == m_vmIndex.end())
     {
-        return false;
+        throw std::runtime_error("VM " + std::to_string(vmId) + " not found in updateVM");
     }
     int pmId = it->second.first;
     VirtualMachine *vmPtr = it->second.second;
@@ -258,20 +273,27 @@ bool DataCenter::updateVM(int vmId, double utilization)
     Resources oldUsage = vmPtr->getUsage();
     vmPtr->setUtilization(utilization);
 
-    PhysicalMachine *pm = findPM(pmId);
-    pm->free(oldUsage);
-    LogManager::instance().log(LogCategory::VM_UTIL_UPDATE, "VM " + std::to_string(vmId) + " updated on PM " + std::to_string(pmId) + " - new usage: " + "0" + " - available: " + "0"); // TODO
-    if (!pm->canHost(vmPtr->getUsage()))
+    PhysicalMachine &pm = m_physicalMachines[pmId];
+    pm.free(oldUsage);
+    LogManager::instance().log(LogCategory::VM_UTIL_UPDATE, "VM " + std::to_string(vmId) + " updated on PM " + std::to_string(pmId) + " - new usage: " + "0" + " - available: " + "0"); // TODO: add actual values
+    pm.allocate(vmPtr->getUsage());
+
+    if (vmPtr->isMigrating())
     {
-        // std::cerr << "[WARN] new usage doesn't fit on pm" << pmId << std::endl;
+        // migration is in progress
+        // we need to update the old PM as well
+        int oldPMID = vmPtr->getOldPMID();
+        PhysicalMachine &oldPM = m_physicalMachines[oldPMID];
+        oldPM.free(oldUsage);
+        oldPM.allocate(vmPtr->getUsage());
     }
-    pm->allocate(vmPtr->getUsage());
+
     return true;
 }
 
 bool DataCenter::removeVM(int vmId)
 {
-    std::lock_guard<std::mutex> lock(m_vmIndexMutex);
+    std::lock_guard<std::mutex> lock1(m_vmIndexMutex);
     auto it = m_vmIndex.find(vmId);
     if (it == m_vmIndex.end())
     {
@@ -280,9 +302,8 @@ bool DataCenter::removeVM(int vmId)
     int pmId = it->second.first;
     VirtualMachine *vmPtr = it->second.second;
 
-    // find pm
-    PhysicalMachine *pm = findPM(pmId);
-    pm->removeVM(vmId);
+    PhysicalMachine &pm = m_physicalMachines[pmId];
+    pm.removeVM(vmId);
 
     m_vmIndex.erase(it);
     delete vmPtr;
@@ -329,15 +350,28 @@ Resources DataCenter::getResourceUtilizations() const
     return result;
 }
 
+size_t DataCenter::getTurnedOnMachineCount() const
+{
+    size_t count = 0;
+    for (const auto &pm : m_physicalMachines)
+    {
+        if (pm.isTurnedOn())
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)
 {
     Resources usage = vm->getUsage();
-    PhysicalMachine *pm = findPM(pmId);
-    if (!pm->canHost(usage))
+    PhysicalMachine &pm = m_physicalMachines[pmId];
+    if (!pm.canHost(usage))
     {
-        std::runtime_error("PM " + std::to_string(pm->getID()) + "cannot host VM" + std::to_string(vm->getID()));
+        std::runtime_error("PM " + std::to_string(pm.getID()) + "cannot host VM" + std::to_string(vm->getID()));
     }
-    pm->addVM(vm);
+    pm.addVM(vm);
 
     // insert in vmIndex
     {
@@ -359,18 +393,4 @@ void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &eng
     double departureTime = vm->getStartTime() + vm->getDuration();
     auto devt = std::make_shared<VMDepartureEvent>(departureTime, vm->getID());
     engine.pushEvent(devt);
-}
-
-PhysicalMachine *DataCenter::findPM(int pmID) const
-{
-    auto it = std::find_if(m_physicalMachines.begin(), m_physicalMachines.end(),
-                           [pmID](const PhysicalMachine &pm)
-                           { return pm.getID() == pmID; });
-
-    if (it == m_physicalMachines.end())
-    {
-        throw std::runtime_error("PM " + std::to_string(pmID) + "not found");
-    }
-
-    return const_cast<PhysicalMachine *>(&(*it));
 }

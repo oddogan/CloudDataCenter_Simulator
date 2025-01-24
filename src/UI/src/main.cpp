@@ -6,6 +6,9 @@
 #include "Core/include/concurrent/ConcurrentEventQueue.h"
 #include "MainWindow.h"
 
+// Start the data center
+DataCenter dc;
+
 int main(int argc, char *argv[])
 {
     // Create the event queue
@@ -13,9 +16,6 @@ int main(int argc, char *argv[])
 
     // Start the trace reader
     TraceReader reader(queue);
-
-    // Start the data center
-    DataCenter dc;
 
     // Start the simulation engine
     SimulationEngine engine(dc, queue);
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     // Add the physical machines to the data center
     for (int i = 0; i < 500; ++i)
     {
-        dc.addPhysicalMachine(PhysicalMachine(i, Resources(40, 1024, 24576, 40000, 100)));
+        dc.addPhysicalMachine(PhysicalMachine(i, Resources(40, 1024, 24576, 40000, 100), 10, 10, 1));
     }
 
     // Run in CLI mode if arguments are provided
