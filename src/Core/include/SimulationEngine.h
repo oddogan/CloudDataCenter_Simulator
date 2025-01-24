@@ -25,6 +25,7 @@ public:
     size_t getProcessedEventCount() const override { return m_queue.poppedCount(); }
     size_t getRemainingEventCount() const override { return m_queue.size(); }
     size_t getMachineCount() const override { return m_dataCenter.getPhysicalMachines().size(); }
+    size_t getTurnedOnMachineCount() const override { return m_dataCenter.getTurnedOnMachineCount(); }
     std::vector<MachineUsageInfo> getMachineUsageInfo() const override { return m_dataCenter.getMachineUsageInfo(); }
     std::string getCurrentStrategy() const override { return m_dataCenter.getPlacementStrategy()->name().toStdString(); }
     size_t getCurrentBundleSize() const override { return m_dataCenter.getBundleSize(); }
@@ -38,6 +39,7 @@ public:
 
     // In case we want external producers to push
     void pushEvent(const std::shared_ptr<IEvent> &evt);
+    void removeEvents(std::function<bool(const std::shared_ptr<IEvent> &)> predicate);
 
 private:
     void runLoop();

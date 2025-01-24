@@ -39,6 +39,8 @@ void MachineDock::createUI()
 
 void MachineDock::rebuildPanels()
 {
+    qDebug() << "Rebuilding panels";
+
     for (auto panel : m_panels)
     {
         delete panel;

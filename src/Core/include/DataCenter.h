@@ -42,15 +42,15 @@ public:
     const std::vector<PhysicalMachine> &getPhysicalMachines() const { return m_physicalMachines; }
     std::vector<MachineUsageInfo> getMachineUsageInfo() const;
     Resources getResourceUtilizations() const;
+    size_t getTurnedOnMachineCount() const;
 
 private:
     void runPlacement(SimulationEngine &engine);
-    void scheduleMigration(SimulationEngine &engine, int vmID, int new_pmID);
+    void scheduleMigration(SimulationEngine &engine, int vmID, int new_pmID, unsigned int numberOfMigrations);
     bool detectOvercommitment(int pmId, SimulationEngine &engine);
-    double computeMigrationTime(VirtualMachine *vm) const;
+    double computeMigrationTime(VirtualMachine *vm, unsigned int numberOfMigrations) const;
 
     void placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine);
-    PhysicalMachine *findPM(int pmID) const;
 
     mutable std::mutex m_strategyMutex;
     IPlacementStrategy *m_strategy;

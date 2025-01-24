@@ -58,12 +58,12 @@ void HeatmapWidget::paintEvent(QPaintEvent *event)
         double cpuUsage = info.total.cpu > 0 ? (double)info.used.cpu / info.total.cpu : 0.0;
         double ramUsage = info.total.ram > 0 ? (double)info.used.ram / info.total.ram : 0.0;
         double diskUsage = info.total.disk > 0 ? (double)info.used.disk / info.total.disk : 0.0;
-        double fpgaUsage = info.total.fpga > 0 ? (double)info.used.fpga / info.total.fpga : 0.0;
+        double bandwidthUsage = info.total.fpga > 0 ? (double)info.used.bandwidth / info.total.bandwidth : 0.0;
 
         QColor cpuColor = usageColor(cpuUsage);
         QColor ramColor = usageColor(ramUsage);
         QColor diskColor = usageColor(diskUsage);
-        QColor fpgaColor = usageColor(fpgaUsage);
+        QColor bandwidthColor = usageColor(bandwidthUsage);
 
         // Add a black border to the cells, fill them according to the usages
         painter.setPen(Qt::black);
@@ -73,7 +73,7 @@ void HeatmapWidget::paintEvent(QPaintEvent *event)
         painter.drawRect(x + cellSize / 2, y, cellSize / 2, cellSize / 2);
         painter.setBrush(diskColor);
         painter.drawRect(x, y + cellSize / 2, cellSize / 2, cellSize / 2);
-        painter.setBrush(fpgaColor);
+        painter.setBrush(bandwidthColor);
         painter.drawRect(x + cellSize / 2, y + cellSize / 2, cellSize / 2, cellSize / 2);
     }
 }

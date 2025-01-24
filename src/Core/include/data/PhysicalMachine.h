@@ -15,8 +15,8 @@ struct MachineUsageInfo
 class PhysicalMachine
 {
 public:
-    PhysicalMachine(unsigned int id, const Resources &totalResources)
-        : m_ID(id), m_totalResources(totalResources), m_usedResources(0, 0, 0, 0, 0)
+    PhysicalMachine(unsigned int id, const Resources &totalResources, double perCoreBasePowerConsumption, double powerConsumptionCPU, double powerConsumptionFPGA)
+        : m_ID(id), m_totalResources(totalResources), m_usedResources(0, 0, 0, 0, 0), m_powerOnCost(perCoreBasePowerConsumption * totalResources.cpu), m_powerConsumptionCPU(powerConsumptionCPU), m_powerConsumptionFPGA(powerConsumptionFPGA)
     {
     }
 
@@ -36,7 +36,14 @@ public:
         m_usedResources -= request;
     }
 
-    void turnOff() { m_turnedOn = false; }
+    void turnOff()
+    {
+        if (isMigrating())
+            throw std::runtime_error("Cannot turn off PM while migrating");
+
+        m_turnedOn = false;
+    }
+
     void turnOn() { m_turnedOn = true; }
     bool isTurnedOn() const { return m_turnedOn; }
 
@@ -53,11 +60,16 @@ public:
             return Resources(0, 0, 0, 0, 0);
         return m_usedResources / m_totalResources * 100;
     }
+
     bool isOvercommitted() const
     {
         auto free = getFreeResources();
         return (free.cpu < 0 || free.ram < 0 || free.disk < 0 || free.bandwidth < 0 || free.fpga < 0);
     }
+
+    double getPowerOnCost() const { return m_powerOnCost; }
+    double getPowerConsumptionCPU() const { return m_powerConsumptionCPU; }
+    double getPowerConsumptionFPGA() const { return m_powerConsumptionFPGA; }
 
     void addVM(VirtualMachine *vm)
     {
@@ -66,6 +78,7 @@ public:
 
         m_virtualMachines.push_back(vm);
         allocate(vm->getUsage());
+        vm->setPMID(m_ID);
     }
 
     void removeVM(int vmID)
@@ -76,6 +89,10 @@ public:
         {
             free((*it)->getUsage());
             m_virtualMachines.erase(it);
+        }
+        else
+        {
+            throw std::runtime_error("VM not found in removeVM");
         }
 
         if (m_virtualMachines.empty())
@@ -99,11 +116,29 @@ public:
         return {m_ID, m_usedResources, m_totalResources};
     }
 
+    void startMigration()
+    {
+        if (!isTurnedOn())
+            throw std::runtime_error("Cannot start migration on turned off PM");
+        m_ongoingMigrationCount++;
+    }
+    void endMigration()
+    {
+        if (!isTurnedOn())
+            throw std::runtime_error("Cannot end migration on turned off PM");
+        m_ongoingMigrationCount--;
+    }
+    bool isMigrating() const { return m_ongoingMigrationCount > 0; }
+
 private:
     int m_ID;
     bool m_turnedOn{false};
     Resources m_totalResources;
     Resources m_usedResources;
+    double m_powerOnCost;
+    double m_powerConsumptionCPU;
+    double m_powerConsumptionFPGA;
+    int m_ongoingMigrationCount{0};
 
     std::vector<VirtualMachine *> m_virtualMachines;
 };

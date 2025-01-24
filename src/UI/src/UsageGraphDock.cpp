@@ -25,6 +25,7 @@ void UsageGraphDock::createUI()
 {
     m_chart = new QChart();
     m_chart->setTitle("Resource Utilizations");
+    m_chart->legend()->setVisible(true);
 
     m_chartView = new QChartView(m_chart, this);
     m_chartView->setRenderHint(QPainter::Antialiasing);
@@ -40,6 +41,10 @@ void UsageGraphDock::createUI()
     seriesRAM->setName("RAM");
     m_chart->addSeries(seriesRAM);
     m_series.push_back(seriesRAM);
+    auto seriesDisk = new QLineSeries();
+    seriesDisk->setName("Disk");
+    m_chart->addSeries(seriesDisk);
+    m_series.push_back(seriesDisk);
     auto seriesBandwidth = new QLineSeries();
     seriesBandwidth->setName("Bandwidth");
     m_chart->addSeries(seriesBandwidth);
@@ -51,13 +56,14 @@ void UsageGraphDock::createUI()
 
     // Create axes
     auto axisX = new QValueAxis();
-    axisX->setRange(0, AXIS_X_RANGE);
+    axisX->setRange(0, AXIS_X_MIN);
     axisX->setLabelFormat("%d");
     axisX->setTitleText("Time (s)");
     m_chart->addAxis(axisX, Qt::AlignBottom);
 
     auto axisY = new QValueAxis();
-    axisY->setRange(0, 100);
+    axisY->setRange(0, 110);
+    axisY->setTickCount(12);
     axisY->setLabelFormat("%d");
     axisY->setTitleText("Usage (%)");
     m_chart->addAxis(axisY, Qt::AlignLeft);
@@ -89,9 +95,12 @@ void UsageGraphDock::onTimer()
             value = utilizations.utilizations.ram;
             break;
         case 2:
-            value = utilizations.utilizations.bandwidth;
+            value = utilizations.utilizations.disk;
             break;
         case 3:
+            value = utilizations.utilizations.bandwidth;
+            break;
+        case 4:
             value = utilizations.utilizations.fpga;
             break;
         default:
@@ -104,10 +113,9 @@ void UsageGraphDock::onTimer()
             series->removePoints(0, series->count() - MAX_POINTS);
         }
 
-        auto axisX = m_chart->axes(Qt::Horizontal).first();
-        if (utilizations.time > AXIS_X_RANGE)
-        {
-            axisX->setRange(utilizations.time - AXIS_X_RANGE, utilizations.time);
-        }
+        // Set minimum and maximum sizes for X axis
+        auto axisX = m_chart->axes(Qt::Horizontal).at(0);
+
+        axisX->setRange(std::max(0.0, utilizations.time - AXIS_X_RANGE), std::max(utilizations.time + AXIS_X_MIN, AXIS_X_MIN));
     }
 }

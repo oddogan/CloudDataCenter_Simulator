@@ -7,11 +7,13 @@
 #include <memory>
 #include "events/IEvent.h"
 
+#include <iostream>
+
 struct EventComparator
 {
     bool operator()(const std::shared_ptr<IEvent> &lhs, const std::shared_ptr<IEvent> &rhs) const
     {
-        return lhs->getTime() > rhs->getTime();
+        return lhs->getTime() >= rhs->getTime();
     }
 };
 
@@ -80,6 +82,23 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_pushCount;
+    }
+
+    // Remove events from the queue based on a predicate using move semantics
+    void remove(std::function<bool(const std::shared_ptr<IEvent> &)> predicate)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        std::priority_queue<std::shared_ptr<IEvent>, std::vector<std::shared_ptr<IEvent>>, EventComparator> newQueue;
+        while (!m_queue.empty())
+        {
+            auto evt = m_queue.top();
+            m_queue.pop();
+            if (!predicate(evt))
+            {
+                newQueue.push(evt);
+            }
+        }
+        m_queue = std::move(newQueue);
     }
 
 private:

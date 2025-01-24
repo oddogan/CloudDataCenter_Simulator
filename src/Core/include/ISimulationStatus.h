@@ -21,6 +21,7 @@ public:
     virtual size_t getProcessedEventCount() const = 0;
     virtual size_t getRemainingEventCount() const = 0;
     virtual size_t getMachineCount() const = 0;
+    virtual size_t getTurnedOnMachineCount() const = 0;
     virtual std::vector<MachineUsageInfo> getMachineUsageInfo() const = 0;
     virtual std::string getCurrentStrategy() const = 0;
     virtual size_t getCurrentBundleSize() const = 0;

@@ -24,6 +24,7 @@ private:
     QLabel *m_processedCountLabel;
     QLabel *m_remainingCountLabel;
     QLabel *m_machineCountLabel;
+    QLabel *m_turnedOnMachineCountLabel;
     QLabel *m_currentStrategyLabel;
     QLabel *m_currentBundleSizeLabel;
     QTimer m_timer;
