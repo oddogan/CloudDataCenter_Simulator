@@ -14,7 +14,7 @@ public:
     explicit StatusDock(ISimulationStatus *status, QWidget *parent = nullptr);
     ~StatusDock();
 
-private slots:
+private:
     void onTimer();
 
 private:

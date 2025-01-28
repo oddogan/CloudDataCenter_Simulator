@@ -20,7 +20,7 @@ public:
     explicit ConfigurationDock(ISimulationConfiguration *simulator, QWidget *parent = nullptr);
     ~ConfigurationDock();
 
-private slots:
+private:
     void onStrategyChanged(int index);
     void onStrategyApplyClicked();
     void onStrategyResetClicked();

@@ -14,7 +14,7 @@ public:
     explicit LoggingDock(QWidget *parent = nullptr);
     ~LoggingDock();
 
-private slots:
+private:
     void onApplyClicked();
     void onBrowseClicked();
     void onCheckBoxStateChanged(int state);

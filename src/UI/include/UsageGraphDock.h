@@ -15,7 +15,7 @@ public:
     explicit UsageGraphDock(ISimulationStatus *status, QWidget *parent = nullptr);
     ~UsageGraphDock();
 
-private slots:
+private:
     void onTimer();
 
 private:

@@ -63,6 +63,16 @@
     "__config": "cpp",
     "qapplication": "cpp",
     "qdockwidget": "cpp",
-    "qprogressbar": "cpp"
+    "qprogressbar": "cpp",
+    "typeindex": "cpp",
+    "cinttypes": "cpp",
+    "csignal": "cpp",
+    "future": "cpp",
+    "regex": "cpp",
+    "set": "cpp",
+    "shared_mutex": "cpp",
+    "unordered_set": "cpp",
+    "valarray": "cpp",
+    "random": "cpp"
   }
 }
