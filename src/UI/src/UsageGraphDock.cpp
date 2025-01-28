@@ -2,7 +2,7 @@
 #include <QtCharts/QValueAxis>
 
 UsageGraphDock::UsageGraphDock(ISimulationStatus *status, QWidget *parent)
-    : QDockWidget(parent), m_status(status)
+    : QDockWidget(parent), m_status(status), m_totalCount(0)
 {
     setWindowTitle("Usage Graph");
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
@@ -107,7 +107,9 @@ void UsageGraphDock::onTimer()
             break;
         }
 
-        series->append(utilizations.time, value);
+        constexpr bool REAL_TIME = false;
+        auto x_axis = REAL_TIME ? utilizations.time : m_totalCount;
+        series->append(x_axis, value);
         if (series->count() > MAX_POINTS)
         {
             series->removePoints(0, series->count() - MAX_POINTS);
@@ -115,7 +117,8 @@ void UsageGraphDock::onTimer()
 
         // Set minimum and maximum sizes for X axis
         auto axisX = m_chart->axes(Qt::Horizontal).at(0);
-
-        axisX->setRange(std::max(0.0, utilizations.time - AXIS_X_RANGE), std::max(utilizations.time + AXIS_X_MIN, AXIS_X_MIN));
+        axisX->setRange(std::max(0.0, x_axis - AXIS_X_RANGE), std::max(x_axis + AXIS_X_MIN, AXIS_X_MIN));
     }
+
+    m_totalCount++;
 }

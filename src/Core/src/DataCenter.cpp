@@ -121,7 +121,7 @@ void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &e
     auto vm = m_vmIndex[vmId].second;
     if (!vm)
     {
-        std::cerr << "[WARN] VM " << vmId << " departed before its migration completion" << std::endl;
+        LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(vmId) + " departed before its migration completion");
         // throw std::runtime_error("VM not found for migration completion");
         return;
     }

@@ -15,7 +15,9 @@ enum class LogCategory
     VM_MIGRATION,
     VM_UTIL_UPDATE,
     TRACE,
-    DEBUG
+    STRATEGY,
+    DEBUG,
+    WARNING
 };
 
 struct LogCategoryInfo

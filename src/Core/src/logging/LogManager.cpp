@@ -11,7 +11,9 @@ static const LogCategoryInfo s_categories[] = {
     {LogCategory::VM_MIGRATION, "Migration"},
     {LogCategory::VM_UTIL_UPDATE, "VM Util Update"},
     {LogCategory::TRACE, "Trace Info"},
-    {LogCategory::DEBUG, "Debug"}};
+    {LogCategory::STRATEGY, "Strategy Info"},
+    {LogCategory::DEBUG, "Debug"},
+    {LogCategory::WARNING, "Warning"}};
 
 LogManager &LogManager::instance()
 {

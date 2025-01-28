@@ -33,4 +33,5 @@ private:
     static const int MAX_POINTS = 60 * 1000 / INTERVAL_MS; // 1 minute
 
     void createUI();
+    size_t m_totalCount;
 };
