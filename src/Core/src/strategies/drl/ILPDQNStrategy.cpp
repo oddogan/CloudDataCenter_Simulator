@@ -4,6 +4,7 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include "logging/LogManager.h"
+#include "DataCenter.h"
 
 std::vector<std::pair<double, double>> ILPDQNStrategy::s_actions = {
     {0.25, 100.0},
@@ -22,7 +23,7 @@ std::vector<std::pair<double, double>> ILPDQNStrategy::s_actions = {
     {0.75, 300.0},
     {0.75, 400.0}};
 
-ILPDQNStrategy::ILPDQNStrategy() : m_agent(13, s_actions.size(), 1e-3), m_gap(0.01), m_migrationCost(250), m_Tau(0.75), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_configWidget(nullptr)
+ILPDQNStrategy::ILPDQNStrategy() : m_agent(10, s_actions.size(), 1e-3), m_gap(0.01), m_migrationCost(250), m_Tau(0.75), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_configWidget(nullptr)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -40,7 +41,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     results.migrationDecision.reserve(toMigrate.size());
 
     // Build a state vector
-    std::vector<double> state(13, 0.0); // TODO
+    auto state = ComputeState();
 
     // Pick action from DQN -> index in s_actions
     int aidx = m_agent.selectAction(state);
@@ -314,17 +315,11 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
         throw std::runtime_error("ILP Error: " + std::string(e.getMessage()));
     }
 
-    // Define reward
-    double reward = feasible ? -solutionCost : -1000.0;
-
-    // Update DQN
-    std::vector<double> nextState(13, 0.0); // TODO
-
-    // Store transition
-    m_agent.storeTransition({state, aidx, reward, nextState, !feasible});
-
-    // Do Q-learning update
-    m_agent.update();
+    // Save DQN info
+    m_lastReward = feasible ? -solutionCost : -1000.0;
+    m_lastState = state;
+    m_lastActionIdx = aidx;
+    m_lastFeasibility = feasible;
 
     env.end();
 
@@ -371,6 +366,18 @@ double ILPDQNStrategy::CalculatePowerOnCost(PhysicalMachine &machine)
     return machine.getPowerOnCost() + machine.getPowerConsumptionCPU() * 4.0 + machine.getPowerConsumptionFPGA() * 2.0;
 }
 
+void ILPDQNStrategy::updateAgent()
+{
+    // Update DQN
+    auto nextState = ComputeState();
+
+    // Store transition
+    m_agent.storeTransition({m_lastState, m_lastActionIdx, m_lastReward, nextState, !m_lastFeasibility});
+
+    // Do Q-learning update
+    m_agent.update();
+}
+
 QWidget *ILPDQNStrategy::createConfigWidget(QWidget *parent)
 {
     if (!m_configWidget)
@@ -401,4 +408,76 @@ void ILPDQNStrategy::applyConfigFromUI()
 QString ILPDQNStrategy::name() const
 {
     return "ILP + DQN Strategy";
+}
+std::vector<double> ILPDQNStrategy::ComputeState()
+{
+    std::vector<double> state(13, 0.0);
+
+    auto machines = m_dataCenter->getPhysicalMachines();
+
+    // Compute the active VM count
+    int activeVMs = 0;
+    for (auto &machine : machines)
+    {
+        activeVMs += machine.getVirtualMachines().size();
+    }
+    state[0] = activeVMs;
+
+    // Compute the active PM count
+    int activePMs = 0;
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            activePMs++;
+        }
+    }
+    state[1] = activePMs;
+
+    // Compute the average utilizations and standard deviations
+    std::vector<double> cpuUtilizations;
+    std::vector<double> ramUtilizations;
+    std::vector<double> diskUtilizations;
+    std::vector<double> bwUtilizations;
+
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            cpuUtilizations.push_back(machine.getUtilization().cpu);
+            ramUtilizations.push_back(machine.getUtilization().ram);
+            diskUtilizations.push_back(machine.getUtilization().disk);
+            bwUtilizations.push_back(machine.getUtilization().bandwidth);
+        }
+    }
+
+    state[2] = cpuUtilizations.size() > 0 ? std::accumulate(cpuUtilizations.begin(), cpuUtilizations.end(), 0.0) / cpuUtilizations.size() : 0.0;
+
+    state[3] = cpuUtilizations.size() > 0 ? std::sqrt(std::accumulate(cpuUtilizations.begin(), cpuUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                      { return acc + (val - state[2]) * (val - state[2]); }) /
+                                                      cpuUtilizations.size())
+                                          : 0.0;
+
+    state[4] = ramUtilizations.size() > 0 ? std::accumulate(ramUtilizations.begin(), ramUtilizations.end(), 0.0) / ramUtilizations.size() : 0.0;
+
+    state[5] = ramUtilizations.size() > 0 ? std::sqrt(std::accumulate(ramUtilizations.begin(), ramUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                      { return acc + (val - state[4]) * (val - state[4]); }) /
+                                                      ramUtilizations.size())
+                                          : 0.0;
+
+    state[6] = diskUtilizations.size() > 0 ? std::accumulate(diskUtilizations.begin(), diskUtilizations.end(), 0.0) / diskUtilizations.size() : 0.0;
+
+    state[7] = diskUtilizations.size() > 0 ? std::sqrt(std::accumulate(diskUtilizations.begin(), diskUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                       { return acc + (val - state[6]) * (val - state[6]); }) /
+                                                       diskUtilizations.size())
+                                           : 0.0;
+
+    state[8] = bwUtilizations.size() > 0 ? std::accumulate(bwUtilizations.begin(), bwUtilizations.end(), 0.0) / bwUtilizations.size() : 0.0;
+
+    state[9] = bwUtilizations.size() > 0 ? std::sqrt(std::accumulate(bwUtilizations.begin(), bwUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                     { return acc + (val - state[8]) * (val - state[8]); }) /
+                                                     bwUtilizations.size())
+                                         : 0.0;
+
+    return state;
 }

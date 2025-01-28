@@ -6,9 +6,6 @@
 #include "Core/include/concurrent/ConcurrentEventQueue.h"
 #include "MainWindow.h"
 
-// Start the data center
-DataCenter dc;
-
 int main(int argc, char *argv[])
 {
     // Create the event queue
@@ -16,6 +13,9 @@ int main(int argc, char *argv[])
 
     // Start the trace reader
     TraceReader reader(queue);
+
+    // Start the data center
+    DataCenter dc;
 
     // Start the simulation engine
     SimulationEngine engine(dc, queue);

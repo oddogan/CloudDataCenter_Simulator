@@ -4,6 +4,7 @@
 #include "strategies/BestFitDecreasing.h"
 #include <algorithm>
 #include <iostream>
+#include "strategies/drl/ILPDQNStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
@@ -144,10 +145,15 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         return;
 
     Results decisions;
+
+    std::lock_guard<std::mutex> lock(m_strategyMutex);
+
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
     {
-        std::lock_guard<std::mutex> lock(m_strategyMutex);
-        decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
+        ilpdqn->setDataCenter(this);
     }
+
+    decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
 
     m_pendingNewRequests.clear();
     m_pendingMigrations.clear();
@@ -185,6 +191,11 @@ void DataCenter::runPlacement(SimulationEngine &engine)
             LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(pd.vm->getID()) + " migrating from PM " + std::to_string(m_vmIndex[pd.vm->getID()].first) + " to PM " + std::to_string(pd.pmId));
             scheduleMigration(engine, pd.vm->getID(), pd.pmId, numberOfMigrations);
         }
+    }
+
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    {
+        ilpdqn->updateAgent();
     }
 }
 

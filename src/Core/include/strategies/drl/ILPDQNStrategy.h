@@ -5,6 +5,8 @@
 #include <ilcplex/ilocplex.h>
 #include <QWidget>
 
+class DataCenter;
+
 class ILPDQNStrategy : public IPlacementStrategy
 {
 public:
@@ -13,11 +15,21 @@ public:
 
     Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
 
+    void setDataCenter(DataCenter *dc) { m_dataCenter = dc; }
+    void updateAgent();
+
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
     QString name() const override;
 
 private:
+    DataCenter *m_dataCenter;
+    std::vector<double> ComputeState();
+    std::vector<double> m_lastState;
+    int m_lastActionIdx;
+    double m_lastReward;
+    bool m_lastFeasibility;
+
     // Discrete combos for (tau, migrationCost)
     static std::vector<std::pair<double, double>> s_actions;
 

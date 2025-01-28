@@ -12,9 +12,6 @@
     [7]: Standard deviation of disk utilization across PMs
     [8]: Average bandwidth utilization across PMs
     [9]: Standard deviation of bandwidth utilization across PMs
-    [10]: # arrivals in last step
-    [11]: # migrations in last step
-    [12]: # departures in last step
 */
 
 #include <torch/torch.h>
