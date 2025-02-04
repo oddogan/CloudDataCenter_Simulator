@@ -62,6 +62,11 @@ Results AlphaBetaStrategy::run(const std::vector<VirtualMachine *> &newRequests,
     return results;
 }
 
+double AlphaBetaStrategy::getMigrationThreshold()
+{
+    return 0.0;
+}
+
 // Build the config widget with spin boxes for alpha & beta
 QWidget *AlphaBetaStrategy::createConfigWidget(QWidget *parent)
 {

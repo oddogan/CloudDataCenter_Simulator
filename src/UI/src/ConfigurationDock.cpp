@@ -140,8 +140,7 @@ void ConfigurationDock::onStrategyApplyClicked()
     // ask the strategy to apply
     m_currentStrategy->applyConfigFromUI();
 
-    qDebug() << "[ConfigurationDock] Strategy apply done for"
-             << m_currentStrategy->name();
+    qDebug() << "[ConfigurationDock] Strategy apply done for" << m_currentStrategy->name();
     m_simulator->setPlacementStrategy(m_currentStrategy);
 
     // reset the combo box

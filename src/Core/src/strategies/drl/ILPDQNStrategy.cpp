@@ -23,7 +23,7 @@ std::vector<std::pair<double, double>> ILPDQNStrategy::s_actions = {
     {0.75, 300.0},
     {0.75, 400.0}};
 
-ILPDQNStrategy::ILPDQNStrategy() : m_agent(10, s_actions.size(), 1e-3), m_gap(0.01), m_migrationCost(250), m_Tau(0.75), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_configWidget(nullptr)
+ILPDQNStrategy::ILPDQNStrategy() : m_agent(10, s_actions.size(), 1e-3), m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -46,7 +46,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     // Pick action from DQN -> index in s_actions
     int aidx = m_agent.selectAction(state);
     auto [tau, migrationCost] = s_actions[aidx];
-    LogManager::instance().log(LogCategory::DEBUG, "ILPDQNStrategy: Selected action: " + std::to_string(aidx) + " (tau=" + std::to_string(tau) + ", migrationCost=" + std::to_string(migrationCost) + ")");
+    LogManager::instance().log(LogCategory::STRATEGY, "ILPDQNStrategy: Selected action: " + std::to_string(aidx) + " (tau=" + std::to_string(tau) + ", migrationCost=" + std::to_string(migrationCost) + ")");
 
     ChooseMachines(const_cast<std::vector<PhysicalMachine> &>(machines), newRequests, toMigrate);
 
@@ -96,8 +96,6 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
             migrate[j] = IloBoolVar(env);
         }
 
-        // Calculation of CpuUtilPer for eaxh PM for Cost 3
-
         // COST FUNCTION
 
         IloExpr cost(env);
@@ -110,14 +108,14 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
         // Cost 2: Adding migration costs
         for (int j = 0; j < nMig; ++j)
         {
-            cost += migrate[j] * m_migrationCost; // Additional cost for each migration
+            cost += migrate[j] * m_Mu; // Additional cost for each migration
         }
 
         // Cost 3: Adding a dynamic cost depends on to PMs utilization for newcomer requests
         for (int i = 0; i < I; ++i)
         {
             // Calculate the CPU utilization dynamically (assuming current assignments are part of the model)
-            double nCPUUtilization = floor(((m_chosenMachines[i]->getFreeResources().cpu * -1.0) / m_chosenMachines[i]->getTotal().cpu) * 100.0 + 100);
+            double nCPUUtilization = m_chosenMachines[i]->getUtilization().cpu;
 
             for (int j = 0; j < J; ++j)
             {
@@ -130,7 +128,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getUsage().cpu;
                 }
-                cost += x_newcomers[j][i] * additionalCost;
+                cost += x_newcomers[j][i] * additionalCost * m_Beta;
             }
         }
 
@@ -151,14 +149,13 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * toMigrate[j]->getUsage().cpu;
                 }
-                cost += x_migrations[j][i] * additionalCost;
+                cost += x_migrations[j][i] * additionalCost * m_Gamma;
             }
         }
 
         model.add(IloMinimize(env, cost));
 
         // CONSTRAINTS
-
         // Constraint 1: Each request can only be assigned to one PM
         for (int j = 0; j < J; ++j)
         {
@@ -256,12 +253,10 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
         double totalCPUCapacity = m_chosenMachines[0]->getTotal().cpu; // Assuming PMq is defined and nTotalCPU is its total CPU capacity
         // TODO: violatedPM
 
-        // cout << "*********The CPU target after Allcation is:  " << Tau * stpPM_Array[violatedPM].nTotalCPU << endl;
         model.add(remainingCPU <= m_Tau * totalCPUCapacity); // Constraint to keep remaining load within threshold
         remainingCPU.end();
 
         //  SOLVE THE ILP
-
         IloCplex cplex(model);
         cplex.setParam(IloCplex::Param::TimeLimit, 60.0);
         // cplex.setParam(IloCplex::Param::Parallel, IloCplex::Parallel_Mode::Opportunistic);
@@ -324,6 +319,11 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     env.end();
 
     return results;
+}
+
+double ILPDQNStrategy::getMigrationThreshold()
+{
+    return m_MST;
 }
 
 void ILPDQNStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)

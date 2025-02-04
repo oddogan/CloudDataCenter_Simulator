@@ -116,6 +116,11 @@ Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests,
     return results;
 }
 
+double BestFitDecreasing::getMigrationThreshold()
+{
+    return 0.0;
+}
+
 QWidget *BestFitDecreasing::createConfigWidget(QWidget *parent)
 {
     if (!m_configWidget)

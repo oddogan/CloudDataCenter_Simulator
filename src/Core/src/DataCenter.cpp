@@ -238,7 +238,13 @@ void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_p
 
 bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
 {
-    if (m_physicalMachines[pmId].isOvercommitted())
+    double MSThreshold = 0.8;
+    {
+        std::lock_guard<std::mutex> lock(m_strategyMutex);
+        MSThreshold = m_strategy->getMigrationThreshold();
+    }
+
+    if (m_physicalMachines[pmId].isOvercommitted(MSThreshold))
     {
         if (m_physicalMachines[pmId].isMigrating())
         {

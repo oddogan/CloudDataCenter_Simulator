@@ -3,7 +3,7 @@
 #include "strategies/ILPStrategy.h"
 #include "logging/LogManager.h"
 
-ILPStrategy::ILPStrategy() : m_migrationCost(250), m_Tau(0.75), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
+ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -78,7 +78,7 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         // Cost 2: Adding migration costs
         for (int j = 0; j < nMig; ++j)
         {
-            cost += migrate[j] * m_migrationCost; // Additional cost for each migration
+            cost += migrate[j] * m_Mu; // Additional cost for each migration
         }
 
         // Cost 3: Adding a dynamic cost depends on to PMs utilization for newcomer requests
@@ -98,7 +98,7 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getUsage().cpu;
                 }
-                cost += x_newcomers[j][i] * additionalCost;
+                cost += x_newcomers[j][i] * additionalCost * m_Beta;
             }
         }
 
@@ -119,7 +119,7 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * toMigrate[j]->getUsage().cpu;
                 }
-                cost += x_migrations[j][i] * additionalCost;
+                cost += x_migrations[j][i] * additionalCost * m_Gamma;
             }
         }
 
@@ -281,6 +281,11 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
     return results;
 }
 
+double ILPStrategy::getMigrationThreshold()
+{
+    return m_MST;
+}
+
 void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)
 {
     m_chosenMachineCount = 0;
@@ -328,19 +333,40 @@ QWidget *ILPStrategy::createConfigWidget(QWidget *parent)
         m_configWidget = new QWidget(parent);
         auto layout = new QFormLayout(m_configWidget);
 
-        m_migrationCostSpin = new QDoubleSpinBox(m_configWidget);
-        m_migrationCostSpin->setMinimum(0.0);
-        m_migrationCostSpin->setMaximum(1000.0);
-        m_migrationCostSpin->setSingleStep(1.0);
-        m_migrationCostSpin->setValue(m_migrationCost);
-        layout->addRow("Migration Cost:", m_migrationCostSpin);
+        m_MuSpin = new QDoubleSpinBox(m_configWidget);
+        m_MuSpin->setMinimum(0.0);
+        m_MuSpin->setMaximum(1000.0);
+        m_MuSpin->setSingleStep(1.0);
+        m_MuSpin->setValue(m_Mu);
+        layout->addRow("Mu (Migration Cost):", m_MuSpin);
 
         m_TauSpin = new QDoubleSpinBox(m_configWidget);
         m_TauSpin->setMinimum(0.0);
         m_TauSpin->setMaximum(1.0);
         m_TauSpin->setSingleStep(0.01);
         m_TauSpin->setValue(m_Tau);
-        layout->addRow("Tau:", m_TauSpin);
+        layout->addRow("Tau (Target Utilization after Migration):", m_TauSpin);
+
+        m_BetaSpin = new QDoubleSpinBox(m_configWidget);
+        m_BetaSpin->setMinimum(0.0);
+        m_BetaSpin->setMaximum(100.0);
+        m_BetaSpin->setSingleStep(0.01);
+        m_BetaSpin->setValue(m_Beta);
+        layout->addRow("Beta (Expected Utilization Scaler for Newcomers):", m_BetaSpin);
+
+        m_GammaSpin = new QDoubleSpinBox(m_configWidget);
+        m_GammaSpin->setMinimum(0.0);
+        m_GammaSpin->setMaximum(100.0);
+        m_GammaSpin->setSingleStep(0.01);
+        m_GammaSpin->setValue(m_Gamma);
+        layout->addRow("Gamma (Expected Utilization Scaler for Migrations):", m_GammaSpin);
+
+        m_MSTSpin = new QDoubleSpinBox(m_configWidget);
+        m_MSTSpin->setMinimum(0.0);
+        m_MSTSpin->setMaximum(1.0);
+        m_MSTSpin->setSingleStep(0.01);
+        m_MSTSpin->setValue(m_MST);
+        layout->addRow("MST (Migration Start Threshold):", m_MSTSpin);
 
         m_extraMachineCoefficientSpin = new QDoubleSpinBox(m_configWidget);
         m_extraMachineCoefficientSpin->setMinimum(0.0);
@@ -363,8 +389,11 @@ QWidget *ILPStrategy::createConfigWidget(QWidget *parent)
 
 void ILPStrategy::applyConfigFromUI()
 {
-    m_migrationCost = m_migrationCostSpin->value();
+    m_Mu = m_MuSpin->value();
     m_Tau = m_TauSpin->value();
+    m_Beta = m_BetaSpin->value();
+    m_Gamma = m_GammaSpin->value();
+    m_MST = m_MSTSpin->value();
     m_extraMachineCoefficient = m_extraMachineCoefficientSpin->value();
     m_maximumRequestsInPM = m_maximumRequestsInPMSpin->value();
 }
