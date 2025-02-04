@@ -6,28 +6,35 @@
 #include "logging/LogManager.h"
 #include "DataCenter.h"
 
-std::vector<std::pair<double, double>> ILPDQNStrategy::s_actions = {
-    {0.25, 100.0},
-    {0.25, 200.0},
-    {0.25, 250.0},
-    {0.25, 300.0},
-    {0.25, 400.0},
-    {0.50, 100.0},
-    {0.50, 200.0},
-    {0.50, 250.0},
-    {0.50, 300.0},
-    {0.50, 400.0},
-    {0.75, 100.0},
-    {0.75, 200.0},
-    {0.75, 250.0},
-    {0.75, 300.0},
-    {0.75, 400.0}};
-
-ILPDQNStrategy::ILPDQNStrategy() : m_agent(10, s_actions.size(), 1e-3), m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
+ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
     m_turnedOffMachines.resize(1e3, nullptr);
+
+    // Define the value sets
+    std::vector<double> mu = {1.0, 0.95, 0.9};
+    std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
+    std::vector<std::tuple<double, double>> beta_gamma = {
+        {1.0, 1.0}, {0.5, 0.5}, {1.0, -1.0}, {0.5, -1.0}, {0.8, -1.0}, {0.8, 0.8}, {0.85, -1.0}};
+    std::vector<double> mst = {200, 250, 300};
+
+    // Nested loops to generate all combinations
+    for (double m : mu)
+    {
+        for (double t : tau)
+        {
+            for (const auto &[b, g] : beta_gamma)
+            {
+                for (double ms : mst)
+                {
+                    m_actions.emplace_back(m, t, b, g, ms);
+                }
+            }
+        }
+    }
+
+    m_agent = new DQNAgent(10, m_actions.size(), 1e-3);
 }
 
 ILPDQNStrategy::~ILPDQNStrategy()
@@ -44,9 +51,15 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     auto state = ComputeState();
 
     // Pick action from DQN -> index in s_actions
-    int aidx = m_agent.selectAction(state);
-    auto [tau, migrationCost] = s_actions[aidx];
-    LogManager::instance().log(LogCategory::STRATEGY, "ILPDQNStrategy: Selected action: " + std::to_string(aidx) + " (tau=" + std::to_string(tau) + ", migrationCost=" + std::to_string(migrationCost) + ")");
+    int aidx = m_agent->selectAction(state);
+    auto [mu, tau, beta, gamma, mst] = m_actions[aidx];
+    m_Mu = mu;
+    m_Tau = tau;
+    m_Beta = beta;
+    m_Gamma = gamma;
+    m_MST = mst;
+
+    // Log the selected action in an aligned way for each parameter
 
     ChooseMachines(const_cast<std::vector<PhysicalMachine> &>(machines), newRequests, toMigrate);
 
@@ -128,7 +141,17 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getUsage().cpu;
                 }
-                cost += x_newcomers[j][i] * additionalCost * m_Beta;
+
+                if (m_Beta < 0)
+                {
+                    additionalCost *= (newRequests[j]->getUsage().cpu / newRequests[j]->getTotalRequestedResources().cpu);
+                }
+                else
+                {
+                    additionalCost *= m_Beta;
+                }
+
+                cost += x_newcomers[j][i] * additionalCost;
             }
         }
 
@@ -149,7 +172,17 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * toMigrate[j]->getUsage().cpu;
                 }
-                cost += x_migrations[j][i] * additionalCost * m_Gamma;
+
+                if (m_Gamma < 0)
+                {
+                    additionalCost *= (toMigrate[j]->getUsage().cpu / toMigrate[j]->getTotalRequestedResources().cpu);
+                }
+                else
+                {
+                    additionalCost *= m_Gamma;
+                }
+
+                cost += x_migrations[j][i] * additionalCost;
             }
         }
 
@@ -372,10 +405,10 @@ void ILPDQNStrategy::updateAgent()
     auto nextState = ComputeState();
 
     // Store transition
-    m_agent.storeTransition({m_lastState, m_lastActionIdx, m_lastReward, nextState, !m_lastFeasibility});
+    m_agent->storeTransition({m_lastState, m_lastActionIdx, m_lastReward, nextState, !m_lastFeasibility});
 
     // Do Q-learning update
-    m_agent.update();
+    m_agent->update();
 }
 
 QWidget *ILPDQNStrategy::createConfigWidget(QWidget *parent)

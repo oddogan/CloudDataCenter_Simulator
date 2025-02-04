@@ -31,11 +31,10 @@ private:
     double m_lastReward;
     bool m_lastFeasibility;
 
-    // Discrete combos for (tau, migrationCost)
-    static std::vector<std::pair<double, double>> s_actions;
+    std::vector<std::tuple<double, double, double, double, double>> m_actions;
 
     // DQN agent
-    DQNAgent m_agent;
+    DQNAgent *m_agent;
     double m_gap;
 
     // ILP
