@@ -13,11 +13,11 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
     m_turnedOffMachines.resize(1e3, nullptr);
 
     // Define the value sets
-    std::vector<double> mu = {1.0, 0.95, 0.9};
+    std::vector<double> mu = {200, 250, 300};
     std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
     std::vector<std::tuple<double, double>> beta_gamma = {
         {1.0, 1.0}, {0.5, 0.5}, {1.0, -1.0}, {0.5, -1.0}, {0.8, -1.0}, {0.8, 0.8}, {0.85, -1.0}};
-    std::vector<double> mst = {200, 250, 300};
+    std::vector<double> mst = {1.0, 0.95, 0.9};
 
     // Nested loops to generate all combinations
     for (double m : mu)
@@ -34,7 +34,7 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
         }
     }
 
-    m_agent = new DQNAgent(10, m_actions.size(), 1e-3, 32, 0.1);
+    m_agent = new DQNAgent(18, m_actions.size(), 1e-3, 32, 0.1);
 }
 
 ILPDQNStrategy::~ILPDQNStrategy()
@@ -455,7 +455,7 @@ QString ILPDQNStrategy::name() const
 }
 std::vector<double> ILPDQNStrategy::ComputeState()
 {
-    std::vector<double> state(13, 0.0);
+    std::vector<double> state(18, 0.0);
 
     auto machines = m_dataCenter->getPhysicalMachines();
 
@@ -522,6 +522,27 @@ std::vector<double> ILPDQNStrategy::ComputeState()
                                                                      { return acc + (val - state[8]) * (val - state[8]); }) /
                                                      bwUtilizations.size())
                                          : 0.0;
+
+    // Compute the bins for CPU utilizations in PMs with 20% increments
+    std::vector<int> cpuBins(5, 0);
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            int bin = std::min(4, static_cast<int>(machine.getUtilization().cpu / 20.0));
+            cpuBins[bin]++;
+        }
+    }
+
+    for (int i = 0; i < 5; ++i)
+    {
+        state[10 + i] = cpuBins[i];
+    }
+
+    // Add the stats since last placement to the state
+    state[15] = m_dataCenter->getNumberofSLAVsSinceLastPlacement();
+    state[16] = m_dataCenter->getNumberofMigrationsSinceLastPlacement();
+    state[17] = m_dataCenter->getNumberofNewRequestsSinceLastPlacement();
 
     return state;
 }

@@ -12,7 +12,7 @@ function PlotData(varargin)
     end
 
     % Plot global utilizations on the same plot
-    subplot(2,2,1);
+    subplot(3,2,1);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -31,7 +31,7 @@ function PlotData(varargin)
     grid on;
     
     % Plot turned on machine count
-    subplot(2,2,2);
+    subplot(3,2,3);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -44,8 +44,22 @@ function PlotData(varargin)
     title('Turned On Machine Count');
     legend;
     grid on;
+
+    subplot(3,2,4);
+    hold on;
+    for i = 1:length(dataSets)
+        data = dataSets{i};
+        color = colors(i, :);
+        plot(data.time, data.numberOfSLAVs, '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s - Count', names{i}));
+    end
+    hold off;
+    xlabel('Time');
+    ylabel('Count');
+    title('# SLA Violations');
+    legend;
+    grid on;
     
-    subplot(2,2,3);
+    subplot(3,2,5);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -59,7 +73,7 @@ function PlotData(varargin)
     legend;
     grid on;
     
-    subplot(2,2,4);
+    subplot(3,2,6);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};

@@ -73,6 +73,7 @@ void DataCenter::handle(const VMRequestEvent &event, SimulationEngine &engine)
     // push to pending
     {
         std::lock_guard<std::mutex> lock(m_bundleMutex);
+        m_NewRequestCountSinceLastPlacement++;
         m_pendingNewRequests.push_back(rawVm);
         if (m_pendingNewRequests.size() >= m_bundleSize)
         {
@@ -136,6 +137,8 @@ void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &e
     auto &newPM = m_physicalMachines[event.getNewPmId()];
     newPM.endMigration();
 
+    m_MigrationCountSinceLastPlacement++;
+
     LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(vmId) + " migrated from PM " + std::to_string(oldPmId) + " to PM " + std::to_string(event.getNewPmId()));
 }
 
@@ -157,6 +160,10 @@ void DataCenter::runPlacement(SimulationEngine &engine)
 
     m_pendingNewRequests.clear();
     m_pendingMigrations.clear();
+
+    m_SLAVcountSinceLastPlacement = 0;
+    m_MigrationCountSinceLastPlacement = 0;
+    m_NewRequestCountSinceLastPlacement = 0;
 
     // Handle new requests
     for (auto &pd : decisions.placementDecision)
@@ -250,6 +257,9 @@ bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
         {
             return false; // already in migration
         }
+
+        m_SLAVcount++;
+        m_SLAVcountSinceLastPlacement++;
 
         const std::vector<VirtualMachine *> &vmsOnPM = m_physicalMachines[pmId].getVirtualMachines();
 
@@ -412,6 +422,11 @@ double DataCenter::getTotalPowerConsumption() const
         }
     }
     return total;
+}
+
+size_t DataCenter::getNumberOfSLAViolations() const
+{
+    return m_SLAVcount;
 }
 
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)

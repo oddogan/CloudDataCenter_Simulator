@@ -32,7 +32,7 @@ void StatisticsRecorder::recordStatistics()
 {
     if (!m_outputFile.is_open())
     {
-        throw std::runtime_error("Output file not set");
+        return;
     }
 
     auto utilizations = m_engine->getResourceUtilizations();
@@ -52,4 +52,7 @@ void StatisticsRecorder::recordStatistics()
 
     double totalPowerConsumption = m_engine->getTotalPowerConsumption();
     m_outputFile.write(reinterpret_cast<char *>(&totalPowerConsumption), sizeof(double));
+
+    size_t numberOfSLAViolations = m_engine->getNumberOfSLAViolations();
+    m_outputFile.write(reinterpret_cast<char *>(&numberOfSLAViolations), sizeof(size_t));
 }

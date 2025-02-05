@@ -28,4 +28,5 @@ public:
     virtual ResourceUtilizations getResourceUtilizations() const = 0;
     virtual double getAveragePowerConsumption() const = 0;
     virtual double getTotalPowerConsumption() const = 0;
+    virtual size_t getNumberOfSLAViolations() const = 0;
 };
