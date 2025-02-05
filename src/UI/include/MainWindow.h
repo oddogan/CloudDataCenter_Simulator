@@ -29,7 +29,7 @@ public:
     explicit MainWindow(TraceReader &traceReader, SimulationEngine &simulationEngine, QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
+private:
     void on_actionOpenTrace_triggered();
     void on_actionStartSimulation_triggered();
     void on_actionStopSimulation_triggered();

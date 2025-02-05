@@ -98,6 +98,11 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
     return results;
 }
 
+double FirstFitDecreasing::getMigrationThreshold()
+{
+    return 0.0;
+}
+
 QWidget *FirstFitDecreasing::createConfigWidget(QWidget *parent)
 {
     if (!m_configWidget)

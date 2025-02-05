@@ -4,10 +4,8 @@
 #include "Core/include/SimulationEngine.h"
 #include "Core/include/TraceReader.h"
 #include "Core/include/concurrent/ConcurrentEventQueue.h"
+#include "Core/include/StatisticsRecorder.h"
 #include "MainWindow.h"
-
-// Start the data center
-DataCenter dc;
 
 int main(int argc, char *argv[])
 {
@@ -17,8 +15,17 @@ int main(int argc, char *argv[])
     // Start the trace reader
     TraceReader reader(queue);
 
+    // Start the data center
+    DataCenter dc;
+
     // Start the simulation engine
     SimulationEngine engine(dc, queue);
+
+    // Create the statistics recorder
+    StatisticsRecorder recorder(engine);
+
+    // Connect the statistics recorder to the engine
+    engine.ConnectStatisticsRecorder(recorder);
 
     // TODO: Set up the data center
 

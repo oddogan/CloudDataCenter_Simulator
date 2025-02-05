@@ -61,15 +61,24 @@ public:
         return m_usedResources / m_totalResources * 100;
     }
 
-    bool isOvercommitted() const
+    bool isOvercommitted(double threshold_normalized) const
     {
-        auto free = getFreeResources();
-        return (free.cpu < 0 || free.ram < 0 || free.disk < 0 || free.bandwidth < 0 || free.fpga < 0);
+        auto threshold = threshold_normalized * 100;
+        auto used = getUtilization();
+        return used.cpu > threshold || used.ram > threshold || used.disk > threshold || used.bandwidth > threshold || used.fpga > threshold;
     }
 
     double getPowerOnCost() const { return m_powerOnCost; }
     double getPowerConsumptionCPU() const { return m_powerConsumptionCPU; }
     double getPowerConsumptionFPGA() const { return m_powerConsumptionFPGA; }
+
+    double getPowerConsumption() const
+    {
+        if (!isTurnedOn())
+            return 0.0;
+
+        return m_powerOnCost + m_powerConsumptionCPU * m_usedResources.cpu + m_powerConsumptionFPGA * m_usedResources.fpga;
+    }
 
     void addVM(VirtualMachine *vm)
     {

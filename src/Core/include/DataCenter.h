@@ -43,6 +43,8 @@ public:
     std::vector<MachineUsageInfo> getMachineUsageInfo() const;
     Resources getResourceUtilizations() const;
     size_t getTurnedOnMachineCount() const;
+    double getAveragePowerConsumption() const;
+    double getTotalPowerConsumption() const;
 
 private:
     void runPlacement(SimulationEngine &engine);

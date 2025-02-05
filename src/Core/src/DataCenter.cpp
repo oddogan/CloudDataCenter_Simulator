@@ -4,6 +4,7 @@
 #include "strategies/BestFitDecreasing.h"
 #include <algorithm>
 #include <iostream>
+#include "strategies/drl/ILPDQNStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
@@ -120,7 +121,7 @@ void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &e
     auto vm = m_vmIndex[vmId].second;
     if (!vm)
     {
-        std::cerr << "[WARN] VM " << vmId << " departed before its migration completion" << std::endl;
+        LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(vmId) + " departed before its migration completion");
         // throw std::runtime_error("VM not found for migration completion");
         return;
     }
@@ -144,10 +145,15 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         return;
 
     Results decisions;
+
+    std::lock_guard<std::mutex> lock(m_strategyMutex);
+
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
     {
-        std::lock_guard<std::mutex> lock(m_strategyMutex);
-        decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
+        ilpdqn->setDataCenter(this);
     }
+
+    decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
 
     m_pendingNewRequests.clear();
     m_pendingMigrations.clear();
@@ -185,6 +191,11 @@ void DataCenter::runPlacement(SimulationEngine &engine)
             LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(pd.vm->getID()) + " migrating from PM " + std::to_string(m_vmIndex[pd.vm->getID()].first) + " to PM " + std::to_string(pd.pmId));
             scheduleMigration(engine, pd.vm->getID(), pd.pmId, numberOfMigrations);
         }
+    }
+
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    {
+        ilpdqn->updateAgent();
     }
 }
 
@@ -227,7 +238,13 @@ void DataCenter::scheduleMigration(SimulationEngine &engine, int vmID, int new_p
 
 bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
 {
-    if (m_physicalMachines[pmId].isOvercommitted())
+    double MSThreshold = 0.8;
+    {
+        std::lock_guard<std::mutex> lock(m_strategyMutex);
+        MSThreshold = m_strategy->getMigrationThreshold();
+    }
+
+    if (m_physicalMachines[pmId].isOvercommitted(MSThreshold))
     {
         if (m_physicalMachines[pmId].isMigrating())
         {
@@ -361,6 +378,40 @@ size_t DataCenter::getTurnedOnMachineCount() const
         }
     }
     return count;
+}
+
+double DataCenter::getAveragePowerConsumption() const
+{
+    double total = 0.0;
+    size_t count = 0;
+    for (const auto &pm : m_physicalMachines)
+    {
+        if (pm.isTurnedOn())
+        {
+            total += pm.getPowerConsumption();
+            count++;
+        }
+    }
+
+    if (count > 0)
+    {
+        return total / count;
+    }
+
+    return 0.0;
+}
+
+double DataCenter::getTotalPowerConsumption() const
+{
+    double total = 0.0;
+    for (const auto &pm : m_physicalMachines)
+    {
+        if (pm.isTurnedOn())
+        {
+            total += pm.getPowerConsumption();
+        }
+    }
+    return total;
 }
 
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)

@@ -1,24 +1,43 @@
 #pragma once
 
+#include "../IPlacementStrategy.h"
+#include "DQNAgent.h"
+#include <ilcplex/ilocplex.h>
 #include <QWidget>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
-#include "IPlacementStrategy.h"
 
-class ILPStrategy : public IPlacementStrategy
+class DataCenter;
+
+class ILPDQNStrategy : public IPlacementStrategy
 {
 public:
-    ILPStrategy();
-    ~ILPStrategy() override;
+    ILPDQNStrategy();
+    ~ILPDQNStrategy() override;
 
     Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
     double getMigrationThreshold() override;
+
+    void setDataCenter(DataCenter *dc) { m_dataCenter = dc; }
+    void updateAgent();
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
     QString name() const override;
 
 private:
+    DataCenter *m_dataCenter;
+    std::vector<double> ComputeState();
+    std::vector<double> m_lastState;
+    int m_lastActionIdx;
+    double m_lastReward;
+    bool m_lastFeasibility;
+
+    std::vector<std::tuple<double, double, double, double, double>> m_actions;
+
+    // DQN agent
+    DQNAgent *m_agent;
+    double m_gap;
+
+    // ILP
     std::vector<PhysicalMachine *> m_chosenMachines;
     std::vector<PhysicalMachine *> m_turnedOffMachines;
     size_t m_chosenMachineCount;
@@ -33,12 +52,5 @@ private:
     double m_extraMachineCoefficient;
     int m_maximumRequestsInPM;
 
-    QDoubleSpinBox *m_MuSpin{nullptr};
-    QDoubleSpinBox *m_TauSpin{nullptr};
-    QDoubleSpinBox *m_BetaSpin{nullptr};
-    QDoubleSpinBox *m_GammaSpin{nullptr};
-    QDoubleSpinBox *m_MSTSpin{nullptr};
-    QDoubleSpinBox *m_extraMachineCoefficientSpin{nullptr};
-    QSpinBox *m_maximumRequestsInPMSpin{nullptr};
     QWidget *m_configWidget{nullptr};
 };

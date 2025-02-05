@@ -5,6 +5,8 @@
 #include <QFormLayout>
 #include <QSpinBox>
 #include <QPushButton>
+#include <QLineEdit>
+#include <QFileDialog>
 #include "strategies/IPlacementStrategy.h"
 #include "ISimulationConfiguration.h"
 
@@ -20,12 +22,14 @@ public:
     explicit ConfigurationDock(ISimulationConfiguration *simulator, QWidget *parent = nullptr);
     ~ConfigurationDock();
 
-private slots:
+private:
     void onStrategyChanged(int index);
     void onStrategyApplyClicked();
     void onStrategyResetClicked();
     void onBundleSizeApplyClicked();
     void onBundleSizeResetClicked();
+    void onOutputFileBrowseClicked();
+    void onOutputFileApplyClicked();
 
 private:
     ISimulationConfiguration *m_simulator{nullptr};
@@ -35,6 +39,10 @@ private:
     QSpinBox *m_bundleSizeSpin{nullptr};
     QPushButton *m_bundleSizeApplyButton{nullptr};
     QPushButton *m_bundleSizeResetButton{nullptr};
+
+    QLineEdit *m_outputFilePathEdit{nullptr};
+    QPushButton *m_outputFileBrowseBtn{nullptr};
+    QPushButton *m_outputFileApplyBtn{nullptr};
 
     QComboBox *m_strategyCombo{nullptr};
     QPushButton *m_strategyApplyBtn{nullptr};

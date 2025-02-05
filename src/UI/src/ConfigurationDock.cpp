@@ -31,8 +31,26 @@ void ConfigurationDock::createUI()
     m_container = new QWidget(this);
     m_formLayout = new QFormLayout(m_container);
 
-    // Bundle size
+    // Output file
+    auto hboxOutputFile = new QHBoxLayout();
 
+    auto outputFilePathLabel = new QLabel("Output file:", m_container);
+    hboxOutputFile->addWidget(outputFilePathLabel);
+
+    m_outputFilePathEdit = new QLineEdit(m_container);
+    hboxOutputFile->addWidget(m_outputFilePathEdit);
+
+    m_outputFileBrowseBtn = new QPushButton("Browse", m_container);
+    connect(m_outputFileBrowseBtn, &QPushButton::clicked, this, &ConfigurationDock::onOutputFileBrowseClicked);
+    hboxOutputFile->addWidget(m_outputFileBrowseBtn);
+
+    m_outputFileApplyBtn = new QPushButton("Apply", m_container);
+    connect(m_outputFileApplyBtn, &QPushButton::clicked, this, &ConfigurationDock::onOutputFileApplyClicked);
+    hboxOutputFile->addWidget(m_outputFileApplyBtn);
+
+    m_formLayout->addRow(hboxOutputFile);
+
+    // Bundle size
     auto hboxBundle = new QHBoxLayout();
 
     auto bundleSizeLabel = new QLabel("Bundle size:", m_container);
@@ -140,8 +158,7 @@ void ConfigurationDock::onStrategyApplyClicked()
     // ask the strategy to apply
     m_currentStrategy->applyConfigFromUI();
 
-    qDebug() << "[ConfigurationDock] Strategy apply done for"
-             << m_currentStrategy->name();
+    qDebug() << "[ConfigurationDock] Strategy apply done for" << m_currentStrategy->name();
     m_simulator->setPlacementStrategy(m_currentStrategy);
 
     // reset the combo box
@@ -167,4 +184,23 @@ void ConfigurationDock::onBundleSizeResetClicked()
     m_bundleSizeSpin->setValue(m_simulator->getBundleSize());
     qDebug() << "[ConfigurationDock] Bundle size reset to"
              << m_simulator->getBundleSize();
+}
+
+void ConfigurationDock::onOutputFileBrowseClicked()
+{
+    QString path = QFileDialog::getSaveFileName(this, "Select Output File");
+    if (!path.isEmpty())
+    {
+        m_outputFilePathEdit->setText(path);
+    }
+}
+
+void ConfigurationDock::onOutputFileApplyClicked()
+{
+    if (!m_simulator)
+        return;
+
+    m_simulator->setOutputFile(m_outputFilePathEdit->text().toStdString());
+    qDebug() << "[ConfigurationDock] Output file set to"
+             << m_outputFilePathEdit->text();
 }

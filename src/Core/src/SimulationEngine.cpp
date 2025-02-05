@@ -26,6 +26,12 @@ void SimulationEngine::stop()
     {
         m_thread.join();
     }
+    m_recorder->flush();
+}
+
+void SimulationEngine::ConnectStatisticsRecorder(StatisticsRecorder &recorder)
+{
+    m_recorder = &recorder;
 }
 
 ResourceUtilizations SimulationEngine::getResourceUtilizations() const
@@ -34,6 +40,11 @@ ResourceUtilizations SimulationEngine::getResourceUtilizations() const
     result.utilizations = m_dataCenter.getResourceUtilizations();
     result.time = m_currentTime;
     return result;
+}
+
+void SimulationEngine::setOutputFile(const std::string &filename)
+{
+    m_recorder->setOutputFile(filename);
 }
 
 void SimulationEngine::pushEvent(const std::shared_ptr<IEvent> &evt)
@@ -62,7 +73,7 @@ void SimulationEngine::runLoop()
 
         if (t < m_currentTime)
         {
-            LogManager::instance().log(LogCategory::DEBUG, "Event from the past: " + std::to_string(t) + " < " + std::to_string(m_currentTime));
+            LogManager::instance().log(LogCategory::WARNING, "Event from the past: " + std::to_string(t) + " < " + std::to_string(m_currentTime));
             throw std::runtime_error("Event from the past");
             continue;
         }
@@ -71,6 +82,11 @@ void SimulationEngine::runLoop()
 
         // Single-thread event processing
         evt->accept(m_dataCenter, *this);
+
+        if (m_recorder)
+        {
+            m_recorder->recordStatistics();
+        }
     }
-    LogManager::instance().log(LogCategory::DEBUG, "SimulationEngine thread stopped");
+    qDebug() << "SimulationEngine: Stopped";
 }

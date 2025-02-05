@@ -17,7 +17,7 @@ public:
     explicit MachineDock(ISimulationStatus *status, QWidget *parent = nullptr);
     ~MachineDock();
 
-private slots:
+private:
     void onTimer();
 
 private:

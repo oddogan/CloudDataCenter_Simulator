@@ -27,7 +27,7 @@ public:
     // Decide how to place a batch of VMs
     virtual Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) = 0;
 
-    // If you want a config widget:
+    virtual double getMigrationThreshold() = 0;
 
     // Returns a QWidget (or a layout) containing input fields for user configuration
     // The DataCenter or GUI can embed this widget in a config panel.

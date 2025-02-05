@@ -3,6 +3,7 @@
 #include "strategies/BestFitDecreasing.h"
 #include "strategies/AlphaBetaStrategy.h"
 #include "strategies/ILPStrategy.h"
+#include "strategies/drl/ILPDQNStrategy.h"
 
 std::vector<StrategyInfo> StrategyFactory::availableStrategies()
 {
@@ -11,6 +12,7 @@ std::vector<StrategyInfo> StrategyFactory::availableStrategies()
     list.push_back({"BestFitDecreasing"});
     list.push_back({"AlphaBetaStrategy"});
     list.push_back({"ILPStrategy"});
+    list.push_back({"ILP + DQN Strategy"});
     return list;
 }
 
@@ -31,6 +33,10 @@ IPlacementStrategy *StrategyFactory::create(const QString &name)
     else if (name == "ILPStrategy")
     {
         return new ILPStrategy();
+    }
+    else if (name == "ILP + DQN Strategy")
+    {
+        return new ILPDQNStrategy();
     }
     else
     {

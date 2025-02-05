@@ -20,13 +20,11 @@ MainWindow::MainWindow(TraceReader &traceReader, SimulationEngine &simulationEng
 {
     ui->setupUi(this);
 
-    /*
     connect(ui->actionOpenTrace, &QAction::triggered, this, &MainWindow::on_actionOpenTrace_triggered);
     connect(ui->actionStartSimulation, &QAction::triggered, this, &MainWindow::on_actionStartSimulation_triggered);
     connect(ui->actionStopSimulation, &QAction::triggered, this, &MainWindow::on_actionStopSimulation_triggered);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::on_actionQuit_triggered);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::on_actionAbout_triggered);
-    */
 
     setupDocks();
     setupCentralWidget();
