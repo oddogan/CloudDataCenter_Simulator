@@ -77,7 +77,7 @@ public:
         if (!isTurnedOn())
             return 0.0;
 
-        return m_powerConsumptionCPU * m_usedResources.cpu + m_powerConsumptionFPGA * m_usedResources.fpga;
+        return m_powerOnCost + m_powerConsumptionCPU * m_usedResources.cpu + m_powerConsumptionFPGA * m_usedResources.fpga;
     }
 
     void addVM(VirtualMachine *vm)
