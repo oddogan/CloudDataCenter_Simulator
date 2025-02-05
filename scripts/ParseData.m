@@ -1,26 +1,63 @@
 function data = ParseData(filename)
+    % File size
+    s = dir(filename);         
+    filesize = s.bytes;
+
     % Define the number of variables per record
     bytesPerRecord = 6 * 8 + 8 + 8 + 8 + 8; % 6 doubles (8 bytes each) + 1 uint64 (8 bytes) + 2 double + 1 uint64
     
-    % Map the file
+    % Compute the total number of records
+    totalRecords = floor(filesize / bytesPerRecord);
+    
+    % Memory-map the file
     m = memmapfile(filename, 'Format', 'uint8', 'Writable', false);
     
-    % Compute the total number of records
-    totalRecords = floor(numel(m.Data) / bytesPerRecord);
-    
-    % Reshape raw data into a matrix
-    rawData = reshape(m.Data(1:totalRecords * bytesPerRecord), bytesPerRecord, [])';
-    
-    % Convert bytes to usable data
+    % Extract raw bytes as a single vector
+    rawData = m.Data(1:totalRecords * bytesPerRecord);
+    % Preallocate structured output
     data = struct();
-    data.time = typecast(reshape(rawData(:, 1:8)', [], 1), 'double')';
-    data.cpu = typecast(reshape(rawData(:, 9:16)', [], 1), 'double')';
-    data.ram = typecast(reshape(rawData(:, 17:24)', [], 1), 'double')';
-    data.disk = typecast(reshape(rawData(:, 25:32)', [], 1), 'double')';
-    data.bandwidth = typecast(reshape(rawData(:, 33:40)', [], 1), 'double')';
-    data.fpga = typecast(reshape(rawData(:, 41:48)', [], 1), 'double')';
-    data.turnedOnMachineCount = typecast(reshape(rawData(:, 49:56)', [], 1), 'uint64')';
-    data.averagePowerConsumption = typecast(reshape(rawData(:, 57:64)', [], 1), 'double')';
-    data.totalPowerConsumption = typecast(reshape(rawData(:, 65:72)', [], 1), 'double')';
-    data.numberOfSLAVs = typecast(reshape(rawData(:, 73:80)', [], 1), 'uint64')';
+    data.time = zeros(1, totalRecords);
+    data.cpu = zeros(1, totalRecords);
+    data.ram = zeros(1, totalRecords);
+    data.disk = zeros(1, totalRecords);
+    data.bandwidth = zeros(1, totalRecords);
+    data.fpga = zeros(1, totalRecords);
+    data.turnedOnMachineCount = zeros(1, totalRecords, 'uint64');
+    data.averagePowerConsumption = zeros(1, totalRecords);
+    data.totalPowerConsumption = zeros(1, totalRecords);
+    data.numberOfSLAVs = zeros(1, totalRecords, 'uint64');
+
+    % **Extract interleaved data correctly using strided access**
+    for i = 1:totalRecords
+        startIdx = (i-1) * bytesPerRecord + 1;
+        
+        data.time(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.cpu(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.ram(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.disk(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.bandwidth(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.fpga(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.turnedOnMachineCount(i) = typecast(rawData(startIdx : startIdx + 7), 'uint64');
+        startIdx = startIdx + 8;
+        
+        data.averagePowerConsumption(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.totalPowerConsumption(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
+        startIdx = startIdx + 8;
+        
+        data.numberOfSLAVs(i) = typecast(rawData(startIdx : startIdx + 7), 'uint64');
+    end
 end
