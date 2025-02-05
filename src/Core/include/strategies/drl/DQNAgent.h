@@ -32,12 +32,17 @@ struct Transition
 class DQNAgent
 {
 public:
-    DQNAgent(int stateDim, int actionCount, double lr = 1e-3);
+    DQNAgent(int stateDim, int actionCount, double lr = 1e-3, size_t batchSize = 128, double epsilon = 0.1);
     ~DQNAgent();
 
     int selectAction(const std::vector<double> &state);
     void storeTransition(const Transition &transition);
     void update();
+
+    void setEpsilon(double epsilon) { m_epsilon = epsilon; }
+    void setBatchSize(size_t batchSize) { m_batchSize = batchSize; }
+    double getEpsilon() const { return m_epsilon; }
+    size_t getBatchSize() const { return m_batchSize; }
 
 private:
     struct QNetImpl : torch::nn::Module
@@ -56,6 +61,7 @@ private:
 
     int m_stateDim;
     int m_actionCount;
+    size_t m_batchSize;
     double m_epsilon;
 
     int randomAction();

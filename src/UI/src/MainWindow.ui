@@ -4,7 +4,7 @@
 
     <widget class="QMainWindow" name="MainWindow">
         <property name="windowTitle">
-            <string>VM Consolidation Modern UI</string>
+            <string>Cloud Data Center Simulator</string>
         </property>
 
         <widget class="QWidget" name="centralwidget" />
@@ -34,7 +34,7 @@
             <addaction name="menuView" />
             <addaction name="menuHelp" />
         </widget>
-        
+
         <widget class="QStatusBar" name="statusbar" />
 
         <!-- Actions -->

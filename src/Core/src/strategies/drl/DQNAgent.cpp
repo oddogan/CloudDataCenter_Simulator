@@ -14,13 +14,14 @@ torch::Tensor DQNAgent::QNetImpl::forward(torch::Tensor &x)
     return fc2->forward(h); // shape: [batchSize, outDim]
 }
 
-DQNAgent::DQNAgent(int stateDim, int actionCount, double lr)
+DQNAgent::DQNAgent(int stateDim, int actionCount, double lr, size_t batchSize, double epsilon)
     : m_qNet(QNet(stateDim, actionCount)),
       m_optimizer(m_qNet->parameters(), torch::optim::AdamOptions(lr)),
       m_capacity(10000),
       m_rng(std::random_device()()),
       m_stateDim(stateDim),
       m_actionCount(actionCount),
+      m_batchSize(batchSize),
       m_epsilon(0.1)
 {
 }
@@ -65,8 +66,7 @@ void DQNAgent::storeTransition(const Transition &transition)
 
 void DQNAgent::update()
 {
-    // Need a minimum of 32 transitions to update
-    if (m_replay.size() < 32)
+    if (m_replay.size() < m_batchSize)
     {
         return;
     }
@@ -75,7 +75,7 @@ void DQNAgent::update()
     std::iota(indices.begin(), indices.end(), 0);
     std::shuffle(indices.begin(), indices.end(), m_rng);
 
-    auto batch = std::min<size_t>(32, m_replay.size());
+    auto batch = std::min<size_t>(m_batchSize, m_replay.size());
     auto replayBatch = std::vector<Transition>(batch);
     for (size_t i = 0; i < batch; ++i)
     {

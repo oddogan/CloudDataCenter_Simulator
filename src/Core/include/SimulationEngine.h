@@ -3,6 +3,7 @@
 #include <atomic>
 #include <thread>
 #include "DataCenter.h"
+#include "StatisticsRecorder.h"
 #include "concurrent/ConcurrentEventQueue.h"
 #include "ISimulationStatus.h"
 #include "ISimulationConfiguration.h"
@@ -15,6 +16,7 @@ public:
 
     void start();
     void stop();
+    void ConnectStatisticsRecorder(StatisticsRecorder &recorder);
 
     double currentTime() const { return m_currentTime; }
 
@@ -30,12 +32,14 @@ public:
     std::string getCurrentStrategy() const override { return m_dataCenter.getPlacementStrategy()->name().toStdString(); }
     size_t getCurrentBundleSize() const override { return m_dataCenter.getBundleSize(); }
     ResourceUtilizations getResourceUtilizations() const override;
+    double getAveragePowerConsumption() const override { return m_dataCenter.getAveragePowerConsumption(); }
 
     // ISimulationConfiguration
     void setBundleSize(size_t size) override { m_dataCenter.setBundleSize(size); }
     void setPlacementStrategy(IPlacementStrategy *strategy) override { m_dataCenter.setPlacementStrategy(strategy); }
     size_t getBundleSize() const override { return m_dataCenter.getBundleSize(); }
     IPlacementStrategy *getPlacementStrategy() const override { return m_dataCenter.getPlacementStrategy(); }
+    void setOutputFile(const std::string &filename) override;
 
     // In case we want external producers to push
     void pushEvent(const std::shared_ptr<IEvent> &evt);
@@ -46,6 +50,7 @@ private:
 
     DataCenter &m_dataCenter;
     ConcurrentEventQueue &m_queue;
+    StatisticsRecorder *m_recorder;
 
     std::atomic<bool> m_stop;
     std::thread m_thread;

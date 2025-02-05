@@ -34,7 +34,7 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
         }
     }
 
-    m_agent = new DQNAgent(10, m_actions.size(), 1e-3);
+    m_agent = new DQNAgent(10, m_actions.size(), 1e-3, 32, 0.1);
 }
 
 ILPDQNStrategy::~ILPDQNStrategy()
@@ -60,6 +60,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     m_MST = mst;
 
     // Log the selected action in an aligned way for each parameter
+    LogManager::instance().log(LogCategory::DEBUG, "ILPDQNStrategy: Selected action: Mu=" + std::to_string(mu) + ", Tau=" + std::to_string(tau) + ", Beta=" + std::to_string(beta) + ", Gamma=" + std::to_string(gamma) + ", MST=" + std::to_string(mst));
 
     ChooseMachines(const_cast<std::vector<PhysicalMachine> &>(machines), newRequests, toMigrate);
 
@@ -427,6 +428,14 @@ QWidget *ILPDQNStrategy::createConfigWidget(QWidget *parent)
                          [this](double val)
                          { m_gap = val; });
 
+        auto batchSizeSpin = new QSpinBox(m_configWidget);
+        batchSizeSpin->setRange(1, 1024);
+        batchSizeSpin->setValue(m_agent->getBatchSize());
+        layout->addRow("Batch Size:", batchSizeSpin);
+        QObject::connect(batchSizeSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+                         [this](int val)
+                         { m_agent->setBatchSize(val); });
+
         m_configWidget->setLayout(layout);
     }
     return m_configWidget;
@@ -436,6 +445,8 @@ void ILPDQNStrategy::applyConfigFromUI()
 {
     m_gap = m_configWidget->findChild<QDoubleSpinBox *>()->value();
     qDebug() << "ILPDQNStrategy: MIP Gap set to " << m_gap;
+    m_agent->setBatchSize(m_configWidget->findChild<QSpinBox *>()->value());
+    qDebug() << "ILPDQNStrategy: Batch Size set to " << m_agent->getBatchSize();
 }
 
 QString ILPDQNStrategy::name() const

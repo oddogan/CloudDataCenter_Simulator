@@ -72,6 +72,14 @@ public:
     double getPowerConsumptionCPU() const { return m_powerConsumptionCPU; }
     double getPowerConsumptionFPGA() const { return m_powerConsumptionFPGA; }
 
+    double getPowerConsumption() const
+    {
+        if (!isTurnedOn())
+            return 0.0;
+
+        return m_powerConsumptionCPU * m_usedResources.cpu + m_powerConsumptionFPGA * m_usedResources.fpga;
+    }
+
     void addVM(VirtualMachine *vm)
     {
         if (!isTurnedOn())
