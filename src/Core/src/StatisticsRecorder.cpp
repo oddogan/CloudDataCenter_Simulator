@@ -42,7 +42,6 @@ void StatisticsRecorder::recordStatistics()
     m_outputFile.write(reinterpret_cast<char *>(&utilizations.utilizations.ram), sizeof(double));
     m_outputFile.write(reinterpret_cast<char *>(&utilizations.utilizations.disk), sizeof(double));
     m_outputFile.write(reinterpret_cast<char *>(&utilizations.utilizations.bandwidth), sizeof(double));
-    m_outputFile.write(reinterpret_cast<char *>(&utilizations.utilizations.fpga), sizeof(double));
 
     size_t turnedOnMachineCount = m_engine->getTurnedOnMachineCount();
     m_outputFile.write(reinterpret_cast<char *>(&turnedOnMachineCount), sizeof(size_t));

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include "strategies/drl/ILPDQNStrategy.h"
+#include "strategies/drl/ILPDDQNStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
@@ -155,6 +156,10 @@ void DataCenter::runPlacement(SimulationEngine &engine)
     {
         ilpdqn->setDataCenter(this);
     }
+    else if (auto ilpddqn = dynamic_cast<ILPDDQNStrategy *>(m_strategy))
+    {
+        ilpddqn->setDataCenter(this);
+    }
 
     decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
 
@@ -203,6 +208,10 @@ void DataCenter::runPlacement(SimulationEngine &engine)
     if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
     {
         ilpdqn->updateAgent();
+    }
+    else if (auto ilpddqn = dynamic_cast<ILPDDQNStrategy *>(m_strategy))
+    {
+        ilpddqn->updateAgent();
     }
 }
 
@@ -258,8 +267,11 @@ bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
             return false; // already in migration
         }
 
-        m_SLAVcount++;
-        m_SLAVcountSinceLastPlacement++;
+        if (m_physicalMachines[pmId].isOvercommitted(1.0))
+        {
+            m_SLAVcount++;
+            m_SLAVcountSinceLastPlacement++;
+        }
 
         const std::vector<VirtualMachine *> &vmsOnPM = m_physicalMachines[pmId].getVirtualMachines();
 

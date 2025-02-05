@@ -13,11 +13,11 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
     m_turnedOffMachines.resize(1e3, nullptr);
 
     // Define the value sets
-    std::vector<double> mu = {200, 250, 300};
+    std::vector<double> mu = {100, 200, 250, 300};
     std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
     std::vector<std::tuple<double, double>> beta_gamma = {
-        {1.0, 1.0}, {0.5, 0.5}, {1.0, -1.0}, {0.5, -1.0}, {0.8, -1.0}, {0.8, 0.8}, {0.85, -1.0}};
-    std::vector<double> mst = {1.0, 0.95, 0.9};
+        {{0.5, 0.5}, {0.6, 0.3}, {0.4, 0.6}, {0.7, 0.3}}};
+    std::vector<double> mst = {1.0, 0.95, 0.9, 0.8};
 
     // Nested loops to generate all combinations
     for (double m : mu)
@@ -34,7 +34,7 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
         }
     }
 
-    m_agent = new DQNAgent(18, m_actions.size(), 1e-3, 32, 0.1);
+    m_agent = new DQNAgent(18, m_actions.size(), 1e-4, 100000, 128, 0.99);
 }
 
 ILPDQNStrategy::~ILPDQNStrategy()
@@ -68,7 +68,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     int J = newRequests.size();
     int nMig = toMigrate.size();
 
-    LogManager::instance().log(LogCategory::DEBUG, "ILPDQNStrategy: Running ILP with " + std::to_string(I) + " PMs, " + std::to_string(J) + " new requests, and " + std::to_string(nMig) + " migration requests");
+    LogManager::instance().log(LogCategory::STRATEGY, "ILPDQNStrategy: Running ILP with " + std::to_string(I) + " PMs, " + std::to_string(J) + " new requests, and " + std::to_string(nMig) + " migration requests");
 
     // CPLEX model
     IloEnv env;
@@ -345,7 +345,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     }
 
     // Save DQN info
-    m_lastReward = feasible ? -solutionCost : -1000.0;
+    m_lastReward = feasible ? -(solutionCost + 10e3 * m_dataCenter->getNumberofSLAVsSinceLastPlacement()) : -std::numeric_limits<double>::infinity();
     m_lastState = state;
     m_lastActionIdx = aidx;
     m_lastFeasibility = feasible;
@@ -391,8 +391,6 @@ void ILPDQNStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, cons
     {
         m_chosenMachines[m_chosenMachineCount++] = m_turnedOffMachines[i];
     }
-
-    LogManager::instance().log(LogCategory::DEBUG, "ILPDQNStrategy: Chose " + std::to_string(m_chosenMachineCount) + " PMs for ILP. " + std::to_string(numExtraPMsToInclude) + " extra PMs included");
 }
 
 double ILPDQNStrategy::CalculatePowerOnCost(PhysicalMachine &machine)

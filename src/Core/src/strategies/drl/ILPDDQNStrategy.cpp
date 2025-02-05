@@ -1,24 +1,66 @@
-#include <ilcplex/ilocplex.h>
+#include "strategies/drl/ILPDDQNStrategy.h"
 #include <QFormLayout>
-#include "strategies/ILPStrategy.h"
+#include <QLabel>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include "logging/LogManager.h"
+#include "DataCenter.h"
 
-ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
+ILPDDQNStrategy::ILPDDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
     m_turnedOffMachines.resize(1e3, nullptr);
+
+    // Define the value sets
+    std::vector<double> mu = {100, 200, 250, 300};
+    std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
+    std::vector<std::tuple<double, double>> beta_gamma = {
+        {{0.5, 0.5}, {0.6, 0.3}, {0.4, 0.6}, {0.7, 0.3}}};
+    std::vector<double> mst = {1.0, 0.95, 0.9, 0.8};
+
+    // Nested loops to generate all combinations
+    for (double m : mu)
+    {
+        for (double t : tau)
+        {
+            for (const auto &[b, g] : beta_gamma)
+            {
+                for (double ms : mst)
+                {
+                    m_actions.emplace_back(m, t, b, g, ms);
+                }
+            }
+        }
+    }
+
+    m_agent = new DDQNAgent(18, m_actions.size(), 1e-4, 100000, 128, 0.99);
 }
 
-ILPStrategy::~ILPStrategy()
+ILPDDQNStrategy::~ILPDDQNStrategy()
 {
 }
 
-Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
+Results ILPDDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines)
 {
     Results results;
     results.placementDecision.reserve(newRequests.size());
     results.migrationDecision.reserve(toMigrate.size());
+
+    // Build a state vector
+    auto state = ComputeState();
+
+    // Pick action from DQN -> index in s_actions
+    int aidx = m_agent->selectAction(state);
+    auto [mu, tau, beta, gamma, mst] = m_actions[aidx];
+    m_Mu = mu;
+    m_Tau = tau;
+    m_Beta = beta;
+    m_Gamma = gamma;
+    m_MST = mst;
+
+    // Log the selected action in an aligned way for each parameter
+    LogManager::instance().log(LogCategory::DEBUG, "ILPDDQNStrategy: Selected action: Mu=" + std::to_string(mu) + ", Tau=" + std::to_string(tau) + ", Beta=" + std::to_string(beta) + ", Gamma=" + std::to_string(gamma) + ", MST=" + std::to_string(mst));
 
     ChooseMachines(const_cast<std::vector<PhysicalMachine> &>(machines), newRequests, toMigrate);
 
@@ -26,10 +68,14 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
     int J = newRequests.size();
     int nMig = toMigrate.size();
 
-    LogManager::instance().log(LogCategory::DEBUG, "ILPStrategy: Running ILP with " + std::to_string(I) + " PMs, " + std::to_string(J) + " new requests, and " + std::to_string(nMig) + " migration requests");
+    LogManager::instance().log(LogCategory::STRATEGY, "ILPDDQNStrategy: Running ILP with " + std::to_string(I) + " PMs, " + std::to_string(J) + " new requests, and " + std::to_string(nMig) + " migration requests");
 
     // CPLEX model
     IloEnv env;
+
+    double solutionCost = std::numeric_limits<double>::max();
+    bool feasible = false;
+
     try
     {
         IloModel model(env);
@@ -64,8 +110,6 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
             migrate[j] = IloBoolVar(env);
         }
 
-        // Calculation of CpuUtilPer for eaxh PM for Cost 3
-
         // COST FUNCTION
 
         IloExpr cost(env);
@@ -85,7 +129,7 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         for (int i = 0; i < I; ++i)
         {
             // Calculate the CPU utilization dynamically (assuming current assignments are part of the model)
-            double nCPUUtilization = floor(((m_chosenMachines[i]->getFreeResources().cpu * -1.0) / m_chosenMachines[i]->getTotal().cpu) * 100.0 + 100);
+            double nCPUUtilization = m_chosenMachines[i]->getUtilization().cpu;
 
             for (int j = 0; j < J; ++j)
             {
@@ -98,7 +142,17 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getUsage().cpu;
                 }
-                cost += x_newcomers[j][i] * additionalCost * m_Beta;
+
+                if (m_Beta < 0)
+                {
+                    additionalCost *= (newRequests[j]->getUsage().cpu / newRequests[j]->getTotalRequestedResources().cpu);
+                }
+                else
+                {
+                    additionalCost *= m_Beta;
+                }
+
+                cost += x_newcomers[j][i] * additionalCost;
             }
         }
 
@@ -119,14 +173,23 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
                 {
                     additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * toMigrate[j]->getUsage().cpu;
                 }
-                cost += x_migrations[j][i] * additionalCost * m_Gamma;
+
+                if (m_Gamma < 0)
+                {
+                    additionalCost *= (toMigrate[j]->getUsage().cpu / toMigrate[j]->getTotalRequestedResources().cpu);
+                }
+                else
+                {
+                    additionalCost *= m_Gamma;
+                }
+
+                cost += x_migrations[j][i] * additionalCost;
             }
         }
 
         model.add(IloMinimize(env, cost));
 
         // CONSTRAINTS
-
         // Constraint 1: Each request can only be assigned to one PM
         for (int j = 0; j < J; ++j)
         {
@@ -224,17 +287,22 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         double totalCPUCapacity = m_chosenMachines[0]->getTotal().cpu; // Assuming PMq is defined and nTotalCPU is its total CPU capacity
         // TODO: violatedPM
 
-        // cout << "*********The CPU target after Allcation is:  " << Tau * stpPM_Array[violatedPM].nTotalCPU << endl;
         model.add(remainingCPU <= m_Tau * totalCPUCapacity); // Constraint to keep remaining load within threshold
         remainingCPU.end();
 
         //  SOLVE THE ILP
-
         IloCplex cplex(model);
         cplex.setParam(IloCplex::Param::TimeLimit, 60.0);
         // cplex.setParam(IloCplex::Param::Parallel, IloCplex::Parallel_Mode::Opportunistic);
+        cplex.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, m_gap);
         cplex.setOut(env.getNullStream());
-        cplex.solve();
+        bool ok = cplex.solve();
+
+        if (ok)
+        {
+            solutionCost = cplex.getObjValue();
+            feasible = true;
+        }
 
         // Output results
         for (int j = 0; j < J; ++j)
@@ -276,17 +344,23 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         throw std::runtime_error("ILP Error: " + std::string(e.getMessage()));
     }
 
+    // Save DQN info
+    m_lastReward = feasible ? -(solutionCost + 10e3 * m_dataCenter->getNumberofSLAVsSinceLastPlacement()) : -std::numeric_limits<double>::infinity();
+    m_lastState = state;
+    m_lastActionIdx = aidx;
+    m_lastFeasibility = feasible;
+
     env.end();
 
     return results;
 }
 
-double ILPStrategy::getMigrationThreshold()
+double ILPDDQNStrategy::getMigrationThreshold()
 {
     return m_MST;
 }
 
-void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)
+void ILPDDQNStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)
 {
     m_chosenMachineCount = 0;
 
@@ -319,84 +393,155 @@ void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const s
     }
 }
 
-double ILPStrategy::CalculatePowerOnCost(PhysicalMachine &machine)
+double ILPDDQNStrategy::CalculatePowerOnCost(PhysicalMachine &machine)
 {
     return machine.getPowerOnCost() + machine.getPowerConsumptionCPU() * 4.0 + machine.getPowerConsumptionFPGA() * 2.0;
 }
 
-QWidget *ILPStrategy::createConfigWidget(QWidget *parent)
+void ILPDDQNStrategy::updateAgent()
+{
+    // Update DQN
+    auto nextState = ComputeState();
+
+    // Store transition
+    m_agent->storeTransition({m_lastState, m_lastActionIdx, m_lastReward, nextState, !m_lastFeasibility});
+
+    // Do Q-learning update
+    m_agent->update();
+}
+
+QWidget *ILPDDQNStrategy::createConfigWidget(QWidget *parent)
 {
     if (!m_configWidget)
     {
         m_configWidget = new QWidget(parent);
         auto layout = new QFormLayout(m_configWidget);
 
-        m_MuSpin = new QDoubleSpinBox(m_configWidget);
-        m_MuSpin->setMinimum(0.0);
-        m_MuSpin->setMaximum(1000.0);
-        m_MuSpin->setSingleStep(1.0);
-        m_MuSpin->setValue(m_Mu);
-        layout->addRow("Mu (Migration Cost):", m_MuSpin);
+        auto gapSpin = new QDoubleSpinBox(m_configWidget);
+        gapSpin->setRange(0.00, 1.00);
+        gapSpin->setSingleStep(0.001);
+        gapSpin->setValue(m_gap);
+        layout->addRow("MIP Gap:", gapSpin);
+        QObject::connect(gapSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                         [this](double val)
+                         { m_gap = val; });
 
-        m_TauSpin = new QDoubleSpinBox(m_configWidget);
-        m_TauSpin->setMinimum(0.0);
-        m_TauSpin->setMaximum(1.0);
-        m_TauSpin->setSingleStep(0.01);
-        m_TauSpin->setValue(m_Tau);
-        layout->addRow("Tau (Target Utilization after Migration):", m_TauSpin);
-
-        m_BetaSpin = new QDoubleSpinBox(m_configWidget);
-        m_BetaSpin->setMinimum(0.0);
-        m_BetaSpin->setMaximum(100.0);
-        m_BetaSpin->setSingleStep(0.01);
-        m_BetaSpin->setValue(m_Beta);
-        layout->addRow("Beta (Expected Utilization Scaler for Newcomers):", m_BetaSpin);
-
-        m_GammaSpin = new QDoubleSpinBox(m_configWidget);
-        m_GammaSpin->setMinimum(0.0);
-        m_GammaSpin->setMaximum(100.0);
-        m_GammaSpin->setSingleStep(0.01);
-        m_GammaSpin->setValue(m_Gamma);
-        layout->addRow("Gamma (Expected Utilization Scaler for Migrations):", m_GammaSpin);
-
-        m_MSTSpin = new QDoubleSpinBox(m_configWidget);
-        m_MSTSpin->setMinimum(0.0);
-        m_MSTSpin->setMaximum(1.0);
-        m_MSTSpin->setSingleStep(0.01);
-        m_MSTSpin->setValue(m_MST);
-        layout->addRow("MST (Migration Start Threshold):", m_MSTSpin);
-
-        m_extraMachineCoefficientSpin = new QDoubleSpinBox(m_configWidget);
-        m_extraMachineCoefficientSpin->setMinimum(0.0);
-        m_extraMachineCoefficientSpin->setMaximum(10.0);
-        m_extraMachineCoefficientSpin->setSingleStep(0.1);
-        m_extraMachineCoefficientSpin->setValue(m_extraMachineCoefficient);
-        layout->addRow("Extra Machine Coefficient:", m_extraMachineCoefficientSpin);
-
-        m_maximumRequestsInPMSpin = new QSpinBox(m_configWidget);
-        m_maximumRequestsInPMSpin->setMinimum(1);
-        m_maximumRequestsInPMSpin->setMaximum(2e5);
-        m_maximumRequestsInPMSpin->setValue(m_maximumRequestsInPM);
-        layout->addRow("Maximum Requests in PM:", m_maximumRequestsInPMSpin);
+        auto batchSizeSpin = new QSpinBox(m_configWidget);
+        batchSizeSpin->setRange(1, 1024);
+        batchSizeSpin->setValue(m_agent->getBatchSize());
+        layout->addRow("Batch Size:", batchSizeSpin);
+        QObject::connect(batchSizeSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+                         [this](int val)
+                         { m_agent->setBatchSize(val); });
 
         m_configWidget->setLayout(layout);
     }
-
     return m_configWidget;
 }
 
-void ILPStrategy::applyConfigFromUI()
+void ILPDDQNStrategy::applyConfigFromUI()
 {
-    m_Mu = m_MuSpin->value();
-    m_Tau = m_TauSpin->value();
-    m_Beta = m_BetaSpin->value();
-    m_Gamma = m_GammaSpin->value();
-    m_MST = m_MSTSpin->value();
-    m_extraMachineCoefficient = m_extraMachineCoefficientSpin->value();
-    m_maximumRequestsInPM = m_maximumRequestsInPMSpin->value();
+    m_gap = m_configWidget->findChild<QDoubleSpinBox *>()->value();
+    qDebug() << "ILPDDQNStrategy: MIP Gap set to " << m_gap;
+    m_agent->setBatchSize(m_configWidget->findChild<QSpinBox *>()->value());
+    qDebug() << "ILPDDQNStrategy: Batch Size set to " << m_agent->getBatchSize();
 }
 
-QString ILPStrategy::name() const
+QString ILPDDQNStrategy::name() const
 {
-    return "ILP Strategy";
+    return "ILP + DDQN Strategy";
+}
+
+std::vector<double> ILPDDQNStrategy::ComputeState()
+{
+    std::vector<double> state(18, 0.0);
+
+    auto machines = m_dataCenter->getPhysicalMachines();
+
+    // Compute the active VM count
+    int activeVMs = 0;
+    for (auto &machine : machines)
+    {
+        activeVMs += machine.getVirtualMachines().size();
+    }
+    state[0] = activeVMs;
+
+    // Compute the active PM count
+    int activePMs = 0;
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            activePMs++;
+        }
+    }
+    state[1] = activePMs;
+
+    // Compute the average utilizations and standard deviations
+    std::vector<double> cpuUtilizations;
+    std::vector<double> ramUtilizations;
+    std::vector<double> diskUtilizations;
+    std::vector<double> bwUtilizations;
+
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            cpuUtilizations.push_back(machine.getUtilization().cpu);
+            ramUtilizations.push_back(machine.getUtilization().ram);
+            diskUtilizations.push_back(machine.getUtilization().disk);
+            bwUtilizations.push_back(machine.getUtilization().bandwidth);
+        }
+    }
+
+    state[2] = cpuUtilizations.size() > 0 ? std::accumulate(cpuUtilizations.begin(), cpuUtilizations.end(), 0.0) / cpuUtilizations.size() : 0.0;
+
+    state[3] = cpuUtilizations.size() > 0 ? std::sqrt(std::accumulate(cpuUtilizations.begin(), cpuUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                      { return acc + (val - state[2]) * (val - state[2]); }) /
+                                                      cpuUtilizations.size())
+                                          : 0.0;
+
+    state[4] = ramUtilizations.size() > 0 ? std::accumulate(ramUtilizations.begin(), ramUtilizations.end(), 0.0) / ramUtilizations.size() : 0.0;
+
+    state[5] = ramUtilizations.size() > 0 ? std::sqrt(std::accumulate(ramUtilizations.begin(), ramUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                      { return acc + (val - state[4]) * (val - state[4]); }) /
+                                                      ramUtilizations.size())
+                                          : 0.0;
+
+    state[6] = diskUtilizations.size() > 0 ? std::accumulate(diskUtilizations.begin(), diskUtilizations.end(), 0.0) / diskUtilizations.size() : 0.0;
+
+    state[7] = diskUtilizations.size() > 0 ? std::sqrt(std::accumulate(diskUtilizations.begin(), diskUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                       { return acc + (val - state[6]) * (val - state[6]); }) /
+                                                       diskUtilizations.size())
+                                           : 0.0;
+
+    state[8] = bwUtilizations.size() > 0 ? std::accumulate(bwUtilizations.begin(), bwUtilizations.end(), 0.0) / bwUtilizations.size() : 0.0;
+
+    state[9] = bwUtilizations.size() > 0 ? std::sqrt(std::accumulate(bwUtilizations.begin(), bwUtilizations.end(), 0.0, [state](double acc, double val)
+                                                                     { return acc + (val - state[8]) * (val - state[8]); }) /
+                                                     bwUtilizations.size())
+                                         : 0.0;
+
+    // Compute the bins for CPU utilizations in PMs with 20% increments
+    std::vector<int> cpuBins(5, 0);
+    for (auto &machine : machines)
+    {
+        if (machine.isTurnedOn())
+        {
+            int bin = std::min(4, static_cast<int>(machine.getUtilization().cpu / 20.0));
+            cpuBins[bin]++;
+        }
+    }
+
+    for (int i = 0; i < 5; ++i)
+    {
+        state[10 + i] = cpuBins[i];
+    }
+
+    // Add the stats since last placement to the state
+    state[15] = m_dataCenter->getNumberofSLAVsSinceLastPlacement();
+    state[16] = m_dataCenter->getNumberofMigrationsSinceLastPlacement();
+    state[17] = m_dataCenter->getNumberofNewRequestsSinceLastPlacement();
+
+    return state;
 }
