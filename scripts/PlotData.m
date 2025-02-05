@@ -12,7 +12,7 @@ function PlotData(varargin)
     end
 
     % Plot global utilizations on the same plot
-    subplot(2,1,1);
+    subplot(2,2,1);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -31,7 +31,7 @@ function PlotData(varargin)
     grid on;
     
     % Plot turned on machine count
-    subplot(2,2,3);
+    subplot(2,2,2);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -45,7 +45,7 @@ function PlotData(varargin)
     legend;
     grid on;
     
-    subplot(2,2,4);
+    subplot(2,2,3);
     hold on;
     for i = 1:length(dataSets)
         data = dataSets{i};
@@ -55,7 +55,21 @@ function PlotData(varargin)
     hold off;
     xlabel('Time');
     ylabel('Power Consumption');
-    title('Average Power Consumption');
+    title('Average Power Consumption (W)');
+    legend;
+    grid on;
+    
+    subplot(2,2,4);
+    hold on;
+    for i = 1:length(dataSets)
+        data = dataSets{i};
+        color = colors(i, :);
+        plot(data.time, data.totalPowerConsumption / 1e3, '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s - Power', names{i}));
+    end
+    hold off;
+    xlabel('Time');
+    ylabel('Power Consumption');
+    title('Total Power Consumption (kW)');
     legend;
     grid on;
 end

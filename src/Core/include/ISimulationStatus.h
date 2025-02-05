@@ -27,4 +27,5 @@ public:
     virtual size_t getCurrentBundleSize() const = 0;
     virtual ResourceUtilizations getResourceUtilizations() const = 0;
     virtual double getAveragePowerConsumption() const = 0;
+    virtual double getTotalPowerConsumption() const = 0;
 };

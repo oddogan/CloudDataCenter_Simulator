@@ -401,6 +401,19 @@ double DataCenter::getAveragePowerConsumption() const
     return 0.0;
 }
 
+double DataCenter::getTotalPowerConsumption() const
+{
+    double total = 0.0;
+    for (const auto &pm : m_physicalMachines)
+    {
+        if (pm.isTurnedOn())
+        {
+            total += pm.getPowerConsumption();
+        }
+    }
+    return total;
+}
+
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)
 {
     Resources usage = vm->getUsage();

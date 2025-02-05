@@ -33,6 +33,7 @@ public:
     size_t getCurrentBundleSize() const override { return m_dataCenter.getBundleSize(); }
     ResourceUtilizations getResourceUtilizations() const override;
     double getAveragePowerConsumption() const override { return m_dataCenter.getAveragePowerConsumption(); }
+    double getTotalPowerConsumption() const override { return m_dataCenter.getTotalPowerConsumption(); }
 
     // ISimulationConfiguration
     void setBundleSize(size_t size) override { m_dataCenter.setBundleSize(size); }

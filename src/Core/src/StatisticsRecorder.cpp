@@ -49,4 +49,7 @@ void StatisticsRecorder::recordStatistics()
 
     double averagePowerConsumption = m_engine->getAveragePowerConsumption();
     m_outputFile.write(reinterpret_cast<char *>(&averagePowerConsumption), sizeof(double));
+
+    double totalPowerConsumption = m_engine->getTotalPowerConsumption();
+    m_outputFile.write(reinterpret_cast<char *>(&totalPowerConsumption), sizeof(double));
 }

@@ -1,6 +1,6 @@
 function data = ParseData(filename)
     % Define the number of variables per record
-    bytesPerRecord = 6 * 8 + 8 + 8; % 6 doubles (8 bytes each) + 1 uint64 (8 bytes) + 1 double
+    bytesPerRecord = 6 * 8 + 8 + 8 + 8; % 6 doubles (8 bytes each) + 1 uint64 (8 bytes) + 2 double
     
     % Map the file
     m = memmapfile(filename, 'Format', 'uint8', 'Writable', false);
@@ -21,4 +21,5 @@ function data = ParseData(filename)
     data.fpga = typecast(reshape(rawData(:, 41:48)', [], 1), 'double')';
     data.turnedOnMachineCount = typecast(reshape(rawData(:, 49:56)', [], 1), 'uint64')';
     data.averagePowerConsumption = typecast(reshape(rawData(:, 57:64)', [], 1), 'double')';
+    data.totalPowerConsumption = typecast(reshape(rawData(:, 65:72)', [], 1), 'double')';
 end
