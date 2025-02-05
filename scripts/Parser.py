@@ -52,7 +52,7 @@ class DataPlotter(QMainWindow):
         try:
             dtype = np.dtype([
                 ('time', 'f8'), ('cpu', 'f8'), ('ram', 'f8'), ('disk', 'f8'),
-                ('bandwidth', 'f8'), ('fpga', 'f8'), ('turnedOnMachineCount', 'u8'),
+                ('bandwidth', 'f8'), ('turnedOnMachineCount', 'u8'),
                 ('averagePowerConsumption', 'f8'), ('totalPowerConsumption', 'f8'), ('numberOfSLAVs', 'u8')
             ])
             data = np.fromfile(filename, dtype=dtype)
@@ -81,7 +81,6 @@ class DataPlotter(QMainWindow):
             ax[0, 0].plot(data['time'], data['ram'], linestyle, color=color, label=f"{label} - RAM", alpha=0.7, linewidth=0.8)
             ax[0, 0].plot(data['time'], data['disk'], linestyle, color=color, label=f"{label} - Disk", alpha=0.7, linewidth=0.8)
             ax[0, 0].plot(data['time'], data['bandwidth'], linestyle, color=color, label=f"{label} - Bandwidth", alpha=0.7, linewidth=0.8)
-            ax[0, 0].plot(data['time'], data['fpga'], linestyle, color=color, label=f"{label} - FPGA", alpha=0.7, linewidth=0.8)
 
             ax[0, 1].plot(data['time'], data['turnedOnMachineCount'], linestyle, color=color, label=f"{label} - Machines", alpha=0.7, linewidth=0.8)
             ax[1, 0].plot(data['time'], data['numberOfSLAVs'], linestyle, color=color, label=f"{label} - SLA Violations", alpha=0.7, linewidth=0.8)

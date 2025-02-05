@@ -5,7 +5,7 @@ def parse_binary(filename):
     # Define the structure: 10 doubles per record (each 8 bytes)
     dtype = np.dtype([
         ('time', 'f8'), ('cpu', 'f8'), ('ram', 'f8'), ('disk', 'f8'),
-        ('bandwidth', 'f8'), ('fpga', 'f8'), ('turnedOnMachineCount', 'u8'),
+        ('bandwidth', 'f8'), ('turnedOnMachineCount', 'u8'),
         ('averagePowerConsumption', 'f8'), ('totalPowerConsumption', 'f8'), ('numberOfSLAVs', 'u8')
     ])
     
@@ -21,7 +21,6 @@ def plot_data(data):
     ax[0, 0].plot(data['time'], data['ram'], label="RAM")
     ax[0, 0].plot(data['time'], data['disk'], label="Disk")
     ax[0, 0].plot(data['time'], data['bandwidth'], label="Bandwidth")
-    ax[0, 0].plot(data['time'], data['fpga'], label="FPGA")
     ax[0, 0].set_title("Resource Utilization")
     ax[0, 0].legend()
     
