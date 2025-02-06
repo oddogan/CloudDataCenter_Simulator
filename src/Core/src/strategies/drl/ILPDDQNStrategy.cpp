@@ -34,7 +34,7 @@ ILPDDQNStrategy::ILPDDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta
         }
     }
 
-    m_agent = new DDQNAgent(18, m_actions.size(), 1e-4, 100000, 128, 0.99);
+    m_agent = new DDQNAgent(20, m_actions.size(), 1e-4, 100000, 128, 0.99);
 }
 
 ILPDDQNStrategy::~ILPDDQNStrategy()
@@ -345,7 +345,7 @@ Results ILPDDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, c
     }
 
     // Save DQN info
-    m_lastReward = feasible ? -(solutionCost + 10e3 * m_dataCenter->getNumberofSLAVsSinceLastPlacement()) : -std::numeric_limits<double>::infinity();
+    m_lastReward = feasible ? -(solutionCost) : -std::numeric_limits<double>::infinity();
     m_lastState = state;
     m_lastActionIdx = aidx;
     m_lastFeasibility = feasible;
@@ -454,7 +454,7 @@ QString ILPDDQNStrategy::name() const
 
 std::vector<double> ILPDDQNStrategy::ComputeState()
 {
-    std::vector<double> state(18, 0.0);
+    std::vector<double> state(20, 0.0);
 
     auto machines = m_dataCenter->getPhysicalMachines();
 
@@ -542,6 +542,13 @@ std::vector<double> ILPDDQNStrategy::ComputeState()
     state[15] = m_dataCenter->getNumberofSLAVsSinceLastPlacement();
     state[16] = m_dataCenter->getNumberofMigrationsSinceLastPlacement();
     state[17] = m_dataCenter->getNumberofNewRequestsSinceLastPlacement();
+
+    // Add the total SLAVs to the state
+    state[18] = m_dataCenter->getNumberOfSLAViolations();
+
+    // Add the total power consumption of the PMs to the state
+    double totalPowerConsumption = 0.0;
+    state[19] = m_dataCenter->getTotalPowerConsumption();
 
     return state;
 }

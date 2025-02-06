@@ -17,7 +17,7 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
     std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
     std::vector<std::tuple<double, double>> beta_gamma = {
         {{0.5, 0.5}, {0.6, 0.3}, {0.4, 0.6}, {0.7, 0.3}}};
-    std::vector<double> mst = {1.0, 0.95, 0.9, 0.8};
+    std::vector<double> mst = {0.95, 0.9, 0.85, 0.8};
 
     // Nested loops to generate all combinations
     for (double m : mu)
@@ -34,7 +34,7 @@ ILPDQNStrategy::ILPDQNStrategy() : m_gap(0.01), m_Mu(250), m_Tau(0.75), m_Beta(1
         }
     }
 
-    m_agent = new DQNAgent(18, m_actions.size(), 1e-4, 100000, 128, 0.99);
+    m_agent = new DQNAgent(20, m_actions.size(), 1e-4, 100000, 128, 0.99);
 }
 
 ILPDQNStrategy::~ILPDQNStrategy()
@@ -345,7 +345,7 @@ Results ILPDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, co
     }
 
     // Save DQN info
-    m_lastReward = feasible ? -(solutionCost + 10e3 * m_dataCenter->getNumberofSLAVsSinceLastPlacement()) : -std::numeric_limits<double>::infinity();
+    m_lastReward = feasible ? -(solutionCost) : -std::numeric_limits<double>::infinity();
     m_lastState = state;
     m_lastActionIdx = aidx;
     m_lastFeasibility = feasible;
@@ -453,7 +453,7 @@ QString ILPDQNStrategy::name() const
 }
 std::vector<double> ILPDQNStrategy::ComputeState()
 {
-    std::vector<double> state(18, 0.0);
+    std::vector<double> state(20, 0.0);
 
     auto machines = m_dataCenter->getPhysicalMachines();
 
@@ -541,6 +541,13 @@ std::vector<double> ILPDQNStrategy::ComputeState()
     state[15] = m_dataCenter->getNumberofSLAVsSinceLastPlacement();
     state[16] = m_dataCenter->getNumberofMigrationsSinceLastPlacement();
     state[17] = m_dataCenter->getNumberofNewRequestsSinceLastPlacement();
+
+    // Add the total SLAVs to the state
+    state[18] = m_dataCenter->getNumberOfSLAViolations();
+
+    // Add the total power consumption of the PMs to the state
+    double totalPowerConsumption = 0.0;
+    state[19] = m_dataCenter->getTotalPowerConsumption();
 
     return state;
 }
