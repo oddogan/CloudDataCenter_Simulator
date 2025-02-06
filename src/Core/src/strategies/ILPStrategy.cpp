@@ -234,7 +234,18 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         cplex.setParam(IloCplex::Param::TimeLimit, 60.0);
         // cplex.setParam(IloCplex::Param::Parallel, IloCplex::Parallel_Mode::Opportunistic);
         cplex.setOut(env.getNullStream());
-        cplex.solve();
+        bool ok = cplex.solve();
+
+        if (ok)
+        {
+            m_lastCost = cplex.getObjValue();
+            m_lastFeasibility = true;
+        }
+        else
+        {
+            m_lastCost = std::numeric_limits<double>::infinity();
+            m_lastFeasibility = false;
+        }
 
         // Output results
         for (int j = 0; j < J; ++j)

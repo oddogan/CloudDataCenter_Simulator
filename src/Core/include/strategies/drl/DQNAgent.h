@@ -5,96 +5,39 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
-
-/**
- * A single experience transition in the replay buffer.
- *  - state: a vector<double> for the environment state
- *  - action: an int for the chosen discrete action
- *  - reward: a double
- *  - nextState: a vector<double> for the next state
- *  - done: bool, true if this transition ends the episode
- */
-struct Transition
-{
-    std::vector<double> state;
-    int action;
-    double reward;
-    std::vector<double> nextState;
-    bool done;
-};
+#include "IDQNAgent.h"
 
 /**
  * A minimal DQNAgent class
  */
-class DQNAgent
+class DQNAgent : public IDQNAgent
 {
 public:
     // constructor
-    DQNAgent(int stateDim, int actionCount, double lr = 1e-4, size_t replayCapacity = 100000,
+    DQNAgent(size_t stateDim, size_t actionCount, double lr = 1e-4, size_t replayCapacity = 100000,
              size_t batchSize = 32, double gamma = 0.99)
-        : m_stateDim(stateDim), m_actionCount(actionCount),
-          m_replayCapacity(replayCapacity), m_batchSize(batchSize), m_gamma(gamma),
-          m_epsilon(1.0), m_epsilonMin(0.01), m_epsilonDecay(1e-4)
     {
+        m_stateDim = stateDim;
+        m_actionCount = actionCount;
+        m_replayCapacity = replayCapacity;
+        m_batchSize = batchSize;
+        m_learningRate = lr;
+        m_gamma = gamma;
+        m_epsilon = 1.0;
+        m_epsilonMin = 0.01;
+        m_epsilonDecay = 1e-4;
+
         // create QNet
         m_qNet = QNet(stateDim, actionCount);
         m_optimizer = std::make_unique<torch::optim::Adam>(
             m_qNet->parameters(),
-            torch::optim::AdamOptions(lr));
+            torch::optim::AdamOptions(m_learningRate));
 
         // random seed
         m_rng = std::mt19937(std::random_device{}());
     }
 
-    size_t getBatchSize() const
-    {
-        return m_batchSize;
-    }
-
-    void setBatchSize(size_t batchSize)
-    {
-        m_batchSize = batchSize;
-    }
-
-    // select an action with epsilon-greedy
-    int selectAction(const std::vector<double> &state)
-    {
-        double r = (double)rand() / RAND_MAX;
-        if (r < m_epsilon)
-        {
-            // random
-            std::uniform_int_distribution<int> dist(0, m_actionCount - 1);
-            return dist(m_rng);
-        }
-        else
-        {
-            // greedy from Q
-            torch::Tensor s = torch::from_blob(
-                                  const_cast<double *>(state.data()),
-                                  {(long)state.size()})
-                                  .clone()
-                                  .unsqueeze(0)
-                                  .to(torch::kFloat); // shape [1, stateDim]
-
-            torch::Tensor qvals = m_qNet->forward(s); // [1, actionCount]
-            auto maxIdx = qvals.argmax(1);            // shape [1]
-            int action = maxIdx.item<int>();
-            return action;
-        }
-    }
-
-    // store a transition in replay
-    void storeTransition(const Transition &t)
-    {
-        if (m_replay.size() >= m_replayCapacity)
-        {
-            m_replay.pop_front();
-        }
-        m_replay.push_back(t);
-    }
-
-    // do one training step (sample from replay)
-    void update()
+    virtual void update() override
     {
         if (m_replay.size() < m_batchSize)
         {
@@ -114,8 +57,8 @@ public:
         }
 
         // build Tensors
-        auto stateTensor = torch::zeros({(long)batch, m_stateDim});
-        auto nextTensor = torch::zeros({(long)batch, m_stateDim});
+        auto stateTensor = torch::zeros({(long)batch, (long)m_stateDim});
+        auto nextTensor = torch::zeros({(long)batch, (long)m_stateDim});
         auto actionTensor = torch::zeros({(long)batch}, torch::kInt64);
         auto rewardTensor = torch::zeros({(long)batch});
         auto doneTensor = torch::zeros({(long)batch}, torch::kInt64);
@@ -123,7 +66,7 @@ public:
         for (size_t i = 0; i < batch; i++)
         {
             // copy state
-            for (int d = 0; d < m_stateDim; d++)
+            for (size_t d = 0; d < m_stateDim; d++)
             {
                 stateTensor[i][d] = (float)batchData[i].state[d];
                 nextTensor[i][d] = (float)batchData[i].nextState[d];
@@ -177,52 +120,33 @@ public:
         }
     }
 
-private:
-    /**
-     * QNet: a simple feedforward net with two linear layers.
-     * inDim => hidden(64) => outDim
-     */
-    struct QNetImpl : torch::nn::Module
+    virtual int selectAction(const std::vector<double> &state) override
     {
-        torch::nn::Linear fc1{nullptr}, fc2{nullptr};
-
-        QNetImpl()
+        double r = (double)rand() / RAND_MAX;
+        if (r < m_epsilon)
         {
+            // random
+            std::uniform_int_distribution<int> dist(0, m_actionCount - 1);
+            return dist(m_rng);
         }
-
-        QNetImpl(int inDim, int outDim)
+        else
         {
-            fc1 = register_module("fc1", torch::nn::Linear(inDim, 64));
-            fc2 = register_module("fc2", torch::nn::Linear(64, outDim));
+            // greedy from Q
+            torch::Tensor s = torch::from_blob(
+                                  const_cast<double *>(state.data()),
+                                  {(long)state.size()})
+                                  .clone()
+                                  .unsqueeze(0)
+                                  .to(torch::kFloat); // shape [1, stateDim]
+
+            torch::Tensor qvals = m_qNet->forward(s); // [1, actionCount]
+            auto maxIdx = qvals.argmax(1);            // shape [1]
+            int action = maxIdx.item<int>();
+            return action;
         }
+    }
 
-        torch::Tensor forward(const torch::Tensor &x)
-        {
-            // shape of x: [batch, inDim]
-            auto h = torch::relu(fc1->forward(x));
-            auto out = fc2->forward(h); // [batch, outDim]
-            return out;
-        }
-    };
-    TORCH_MODULE(QNet);
-
-    int m_stateDim;
-    int m_actionCount;
-    size_t m_replayCapacity;
-    size_t m_batchSize;
-    double m_gamma;
-
-    double m_epsilon;
-    double m_epsilonMin;
-    double m_epsilonDecay;
-
-    // Q net
+private:
     QNet m_qNet;
     std::unique_ptr<torch::optim::Optimizer> m_optimizer;
-
-    // replay
-    std::deque<Transition> m_replay;
-
-    // RNG
-    std::mt19937 m_rng;
 };

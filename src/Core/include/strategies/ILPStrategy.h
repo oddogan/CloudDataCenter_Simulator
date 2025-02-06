@@ -18,7 +18,7 @@ public:
     void applyConfigFromUI() override;
     QString name() const override;
 
-private:
+protected:
     std::vector<PhysicalMachine *> m_chosenMachines;
     std::vector<PhysicalMachine *> m_turnedOffMachines;
     size_t m_chosenMachineCount;
@@ -32,6 +32,9 @@ private:
     double m_MST;   // Migration Start Threshold
     double m_extraMachineCoefficient;
     int m_maximumRequestsInPM;
+
+    double m_lastCost;
+    bool m_lastFeasibility;
 
     QDoubleSpinBox *m_MuSpin{nullptr};
     QDoubleSpinBox *m_TauSpin{nullptr};

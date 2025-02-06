@@ -152,13 +152,9 @@ void DataCenter::runPlacement(SimulationEngine &engine)
 
     std::lock_guard<std::mutex> lock(m_strategyMutex);
 
-    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
     {
         ilpdqn->setDataCenter(this);
-    }
-    else if (auto ilpddqn = dynamic_cast<ILPDDQNStrategy *>(m_strategy))
-    {
-        ilpddqn->setDataCenter(this);
     }
 
     decisions = m_strategy->run(m_pendingNewRequests, m_pendingMigrations, m_physicalMachines);
@@ -205,13 +201,9 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         }
     }
 
-    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
     {
         ilpdqn->updateAgent();
-    }
-    else if (auto ilpddqn = dynamic_cast<ILPDDQNStrategy *>(m_strategy))
-    {
-        ilpddqn->updateAgent();
     }
 }
 
