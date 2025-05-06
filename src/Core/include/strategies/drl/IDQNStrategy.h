@@ -31,7 +31,7 @@ protected:
     bool m_lastFeasibility;
     size_t m_stateSize{20};
 
-    std::vector<std::tuple<double, double, double, double, double>> m_actions;
+    std::vector<std::tuple<size_t, double, double, double, double, double>> m_actions;
 
     // DQN agent
     IDQNAgent *m_agent;

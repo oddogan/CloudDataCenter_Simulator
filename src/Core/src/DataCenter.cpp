@@ -12,7 +12,6 @@ DataCenter::DataCenter()
 {
     // Default strategy
     setPlacementStrategy(StrategyFactory::create("ILPStrategy"));
-    setBundleSize(10);
 }
 
 DataCenter::~DataCenter()
@@ -37,12 +36,6 @@ DataCenter::~DataCenter()
         delete kv.second.second; // the VM
     }
     m_vmIndex.clear();
-}
-
-void DataCenter::setBundleSize(size_t newSize)
-{
-    std::lock_guard<std::mutex> lock(m_bundleMutex);
-    m_bundleSize = newSize;
 }
 
 void DataCenter::setPlacementStrategy(IPlacementStrategy *strat)
@@ -76,7 +69,7 @@ void DataCenter::handle(const VMRequestEvent &event, SimulationEngine &engine)
         std::lock_guard<std::mutex> lock(m_bundleMutex);
         m_NewRequestCountSinceLastPlacement++;
         m_pendingNewRequests.push_back(rawVm);
-        if (m_pendingNewRequests.size() >= m_bundleSize)
+        if (m_pendingNewRequests.size() >= getBundleSize())
         {
             runPlacement(engine);
         }

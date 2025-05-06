@@ -54,6 +54,16 @@ public:
 
     Resources getTotal() const { return m_totalResources; }
     Resources getUsed() const { return m_usedResources; }
+    Resources getReservedUsages() const
+    {
+        // Return the total requested resources of all VMs
+        Resources reserved(0, 0, 0, 0, 0);
+        for (auto *vm : m_virtualMachines)
+        {
+            reserved += vm->getTotalRequestedResources();
+        }
+        return reserved;
+    }
     Resources getUtilization() const
     {
         if (m_totalResources == Resources(0, 0, 0, 0, 0))

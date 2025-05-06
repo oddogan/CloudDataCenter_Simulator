@@ -6,6 +6,7 @@
 IDQNStrategy::IDQNStrategy()
 {
     // Define the value sets
+    std::vector<size_t> bundleSize = {1, 3, 5, 10, 15, 20};
     std::vector<double> mu = {100, 200, 250, 300};
     std::vector<double> tau = {1.0, 0.95, 0.90, 0.85, 0.8, 0.75};
     std::vector<std::tuple<double, double>> beta_gamma = {
@@ -13,15 +14,18 @@ IDQNStrategy::IDQNStrategy()
     std::vector<double> mst = {0.95, 0.9, 0.85, 0.8};
 
     // Nested loops to generate all combinations
-    for (double m : mu)
+    for (auto s : bundleSize)
     {
-        for (double t : tau)
+        for (auto m : mu)
         {
-            for (const auto &[b, g] : beta_gamma)
+            for (auto t : tau)
             {
-                for (double ms : mst)
+                for (auto [b, g] : beta_gamma)
                 {
-                    m_actions.emplace_back(m, t, b, g, ms);
+                    for (auto mst_val : mst)
+                    {
+                        m_actions.push_back({s, m, t, b, g, mst_val});
+                    }
                 }
             }
         }
@@ -40,14 +44,15 @@ Results IDQNStrategy::run(const std::vector<VirtualMachine *> &newRequests, cons
 
     // Pick action from DQN -> index in s_actions
     int aidx = m_agent->selectAction(state);
-    auto [mu, tau, beta, gamma, mst] = m_actions[aidx];
+    auto [bundleSize, mu, tau, beta, gamma, mst] = m_actions[aidx];
+    m_bundleSize = bundleSize;
     m_Mu = mu;
     m_Tau = tau;
     m_Beta = beta;
     m_Gamma = gamma;
     m_MST = mst;
 
-    LogManager::instance().log(LogCategory::DEBUG, "IDQNStrategy: Selected action: Mu = " + std::to_string(m_Mu) + ", Tau = " + std::to_string(m_Tau) + ", Beta = " + std::to_string(m_Beta) + ", Gamma = " + std::to_string(m_Gamma) + ", MST = " + std::to_string(m_MST));
+    LogManager::instance().log(LogCategory::DEBUG, "IDQNStrategy: Selected action: BundleSize = " + std::to_string(m_bundleSize) + " Mu = " + std::to_string(m_Mu) + ", Tau = " + std::to_string(m_Tau) + ", Beta = " + std::to_string(m_Beta) + ", Gamma = " + std::to_string(m_Gamma) + ", MST = " + std::to_string(m_MST));
 
     Results res = ILPStrategy::run(newRequests, toMigrate, machines);
 

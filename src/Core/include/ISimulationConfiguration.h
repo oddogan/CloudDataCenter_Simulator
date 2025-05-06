@@ -9,7 +9,6 @@ class ISimulationConfiguration
 public:
     virtual ~ISimulationConfiguration() = default;
 
-    virtual void setBundleSize(size_t size) = 0;
     virtual void setPlacementStrategy(IPlacementStrategy *strategy) = 0;
     virtual void setOutputFile(const std::string &filename) = 0;
 

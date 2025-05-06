@@ -3,7 +3,7 @@
 #include "strategies/ILPStrategy.h"
 #include "logging/LogManager.h"
 
-ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
+ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_bundleSize(10)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -295,6 +295,11 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
 double ILPStrategy::getMigrationThreshold()
 {
     return m_MST;
+}
+
+size_t ILPStrategy::getBundleSize()
+{
+    return m_bundleSize;
 }
 
 void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)

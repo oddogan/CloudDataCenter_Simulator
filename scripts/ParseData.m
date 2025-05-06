@@ -4,7 +4,7 @@ function data = ParseData(filename)
     filesize = s.bytes;
 
     % Define the number of variables per record
-    bytesPerRecord = 6 * 8 + 8 + 8 + 8 + 8; % 6 doubles (8 bytes each) + 1 uint64 (8 bytes) + 2 double + 1 uint64
+    bytesPerRecord = 9 * 8; % 6 doubles (8 bytes each) + 1 uint64 (8 bytes) + 2 double + 1 uint64
     
     % Compute the total number of records
     totalRecords = floor(filesize / bytesPerRecord);
@@ -44,9 +44,6 @@ function data = ParseData(filename)
         startIdx = startIdx + 8;
         
         data.bandwidth(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
-        startIdx = startIdx + 8;
-        
-        data.fpga(i) = typecast(rawData(startIdx : startIdx + 7), 'double');
         startIdx = startIdx + 8;
         
         data.turnedOnMachineCount(i) = typecast(rawData(startIdx : startIdx + 7), 'uint64');

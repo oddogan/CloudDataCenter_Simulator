@@ -24,15 +24,14 @@ function PlotDataOptimized(varargin)
         data = dataSets{i};
         color = colors(i, :);
         plot(downsampleData(data.time), downsampleData(data.cpu), '-', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - CPU', names{i}));
-        plot(downsampleData(data.time), downsampleData(data.ram), '--', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - RAM', names{i}));
-        plot(downsampleData(data.time), downsampleData(data.disk), ':', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - Disk', names{i}));
-        plot(downsampleData(data.time), downsampleData(data.bandwidth), '-.', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - Bandwidth', names{i}));
-        plot(downsampleData(data.time), downsampleData(data.fpga), '--', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - FPGA', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.ram), ':', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - RAM', names{i}));
+        % plot(downsampleData(data.time), downsampleData(data.disk), ':', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - Disk', names{i}));
+        % plot(downsampleData(data.time), downsampleData(data.bandwidth), '-.', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s - Bandwidth', names{i}));
     end
     hold off;
-    xlabel('Time'); ylabel('Utilization');
-    title('Global Resource Utilization');
-    legend('Location', 'bestoutside'); grid on;
+    xlabel('Örnek'); ylabel('Kullanım (%)');
+    title('Toplam Kaynak Kullanımı');
+    legend('Location', 'best'); grid on;
     drawnow limitrate; % Reduce figure updates for performance
 
     % Plot turned on machine count
@@ -41,12 +40,12 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.turnedOnMachineCount), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s - Machines', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.turnedOnMachineCount), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
-    xlabel('Time'); ylabel('Count');
-    title('Turned On Machine Count');
-    legend('Location', 'bestoutside'); grid on;
+    xlabel('Örnek'); ylabel('Sayı');
+    title('Açık Fiziksel Makine Sayısı');
+    legend('Location', 'best'); grid on;
     drawnow limitrate;
 
     % SLA Violations
@@ -55,12 +54,12 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.numberOfSLAVs), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s - SLA Violations', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.numberOfSLAVs), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
-    xlabel('Time'); ylabel('Count');
-    title('# SLA Violations');
-    legend('Location', 'bestoutside'); grid on;
+    xlabel('Örnek'); ylabel('Sayı');
+    title('# SLA İhlali');
+    legend('Location', 'best'); grid on;
     drawnow limitrate;
 
     % Average Power Consumption
@@ -69,12 +68,12 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.averagePowerConsumption), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s - Avg Power', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.averagePowerConsumption), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
-    xlabel('Time'); ylabel('Power Consumption (W)');
-    title('Average Power Consumption');
-    legend('Location', 'bestoutside'); grid on;
+    xlabel('Örnek'); ylabel('Güç Tüketimi (W)');
+    title('Ortalama Güç Tüketimi');
+    legend('Location', 'best'); grid on;
     drawnow limitrate;
 
     % Total Power Consumption (scaled to kW)
@@ -83,11 +82,12 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.totalPowerConsumption / 1e3), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s - Total Power', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.totalPowerConsumption / 1e3), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
-    xlabel('Time'); ylabel('Power Consumption (kW)');
-    title('Total Power Consumption');
-    legend('Location', 'bestoutside'); grid on;
+    xlabel('Örnek'); ylabel('Güç Tüketimi (kW)');
+    title('Toplam Güç Tüketimi');
+    legend('Location', 'best'); grid on;
     drawnow limitrate;
+    fontsize(gcf,scale=1.2)
 end

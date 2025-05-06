@@ -27,7 +27,7 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
         MachineState ms;
         ms.id = pm.getID();
         ms.total = pm.getTotal(); // reading pm's lock internally
-        ms.used = pm.getUsed();
+        ms.used = pm.getReservedUsages();
         localStates.push_back(ms);
     }
 
@@ -35,7 +35,7 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
     // Sort VMs by descending CPU usage
     std::vector<VirtualMachine *> sortedNew = newRequests;
     std::sort(sortedNew.begin(), sortedNew.end(), [](auto *a, auto *b)
-              { return a->getUsage().cpu > b->getUsage().cpu; });
+              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
 
     // Reserve space for results
     results.placementDecision.reserve(newRequests.size());
@@ -67,7 +67,7 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
     // Sort VMs by descending CPU usage
     std::vector<VirtualMachine *> sortedMig = toMigrate;
     std::sort(sortedMig.begin(), sortedMig.end(), [](auto *a, auto *b)
-              { return a->getUsage().cpu > b->getUsage().cpu; });
+              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
 
     // Reserve space for results
     results.migrationDecision.reserve(toMigrate.size());
@@ -100,7 +100,12 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
 
 double FirstFitDecreasing::getMigrationThreshold()
 {
-    return 0.0;
+    return 1.0;
+}
+
+size_t FirstFitDecreasing::getBundleSize()
+{
+    return 10;
 }
 
 QWidget *FirstFitDecreasing::createConfigWidget(QWidget *parent)

@@ -86,6 +86,22 @@ class DataPlotter(QMainWindow):
             ax[1, 0].plot(data['time'], data['numberOfSLAVs'], linestyle, color=color, label=f"{label} - SLA Violations", alpha=0.7, linewidth=0.8)
             ax[1, 1].plot(data['time'], data['averagePowerConsumption'], linestyle, color=color, label=f"{label} - Avg Power", alpha=0.7, linewidth=0.8)
             ax[2, 0].plot(data['time'], data['totalPowerConsumption'] / 1e3, linestyle, color=color, label=f"{label} - Total Power (kW)", alpha=0.7, linewidth=0.8)
+        
+        # Calculate total power consumption difference between two datasets if there are two
+        # The dataset length is checked to avoid out-of-range errors
+        # Indicate which dataset is subtracted by the color of the line
+        # The common length of the two datasets is used to calculate the difference
+        if len(self.datasets) == 2:
+            common_length = min(len(self.datasets[0]), len(self.datasets[1]))
+            difference = self.datasets[0][:common_length]['totalPowerConsumption'] - self.datasets[1][:common_length]['totalPowerConsumption']
+            # For each point: If the difference is positive, red color, If the difference is negative, green color, usable format for the color parameter of the plot function
+            color = ['r' if diff > 0 else 'g' for diff in difference]
+            # Plot each point according to its color
+            ax[2, 1].scatter(self.datasets[0][:common_length]['time'], difference / 1e3, color=color, label=f"{self.dataset_labels[0]} - {self.dataset_labels[1]}", alpha=0.7, linewidth=0.8)
+            # Print the title of the plot as the difference between the two datasets
+            titles[4] = f"Total Power Consumption Difference ({self.dataset_labels[0]} - {self.dataset_labels[1]})"
+
+        
 
         # Set subplot titles correctly and avoid out-of-range errors
         for i in range(3):

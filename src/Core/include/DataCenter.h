@@ -32,8 +32,7 @@ public:
     IPlacementStrategy *getPlacementStrategy() const;
 
     // For bundling
-    void setBundleSize(size_t size);
-    size_t getBundleSize() const { return m_bundleSize; }
+    size_t getBundleSize() const { return m_strategy->getBundleSize(); }
 
     // Thread-safe updates
     bool updateVM(int vmId, double utilization);
@@ -62,7 +61,6 @@ private:
     IPlacementStrategy *m_strategy;
 
     // Bundling
-    size_t m_bundleSize;
     mutable std::mutex m_bundleMutex;
     std::vector<VirtualMachine *> m_pendingNewRequests;
     std::vector<VirtualMachine *> m_pendingMigrations;
