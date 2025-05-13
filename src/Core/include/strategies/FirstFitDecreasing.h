@@ -9,6 +9,7 @@ public:
 
     Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
     double getMigrationThreshold() override;
+    size_t getBundleSize() override;
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;

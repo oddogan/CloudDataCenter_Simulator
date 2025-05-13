@@ -34,9 +34,9 @@ public:
     ResourceUtilizations getResourceUtilizations() const override;
     double getAveragePowerConsumption() const override { return m_dataCenter.getAveragePowerConsumption(); }
     double getTotalPowerConsumption() const override { return m_dataCenter.getTotalPowerConsumption(); }
+    size_t getNumberOfSLAViolations() const override { return m_dataCenter.getNumberOfSLAViolations(); }
 
     // ISimulationConfiguration
-    void setBundleSize(size_t size) override { m_dataCenter.setBundleSize(size); }
     void setPlacementStrategy(IPlacementStrategy *strategy) override { m_dataCenter.setPlacementStrategy(strategy); }
     size_t getBundleSize() const override { return m_dataCenter.getBundleSize(); }
     IPlacementStrategy *getPlacementStrategy() const override { return m_dataCenter.getPlacementStrategy(); }

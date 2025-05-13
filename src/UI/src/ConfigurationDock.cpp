@@ -50,28 +50,6 @@ void ConfigurationDock::createUI()
 
     m_formLayout->addRow(hboxOutputFile);
 
-    // Bundle size
-    auto hboxBundle = new QHBoxLayout();
-
-    auto bundleSizeLabel = new QLabel("Bundle size:", m_container);
-    hboxBundle->addWidget(bundleSizeLabel);
-
-    m_bundleSizeSpin = new QSpinBox(m_container);
-    m_bundleSizeSpin->setMinimum(1);
-    m_bundleSizeSpin->setMaximum(1000);
-    hboxBundle->addWidget(m_bundleSizeSpin);
-
-    m_bundleSizeApplyButton = new QPushButton("Apply", m_container);
-    connect(m_bundleSizeApplyButton, &QPushButton::clicked, this, &ConfigurationDock::onBundleSizeApplyClicked);
-    hboxBundle->addWidget(m_bundleSizeApplyButton);
-
-    m_bundleSizeResetButton = new QPushButton("Reset", m_container);
-    connect(m_bundleSizeResetButton, &QPushButton::clicked, this, &ConfigurationDock::onBundleSizeResetClicked);
-    hboxBundle->addWidget(m_bundleSizeResetButton);
-    m_formLayout->addRow(hboxBundle);
-
-    onBundleSizeResetClicked();
-
     // Strategy
     m_strategyCombo = new QComboBox(m_container);
     loadStrategyList();
@@ -164,26 +142,6 @@ void ConfigurationDock::onStrategyApplyClicked()
     // reset the combo box
     clearCurrentStrategy(false);
     m_strategyCombo->setCurrentIndex(-1);
-}
-
-void ConfigurationDock::onBundleSizeApplyClicked()
-{
-    if (!m_simulator)
-        return;
-
-    m_simulator->setBundleSize(m_bundleSizeSpin->value());
-    qDebug() << "[ConfigurationDock] Bundle size set to"
-             << m_bundleSizeSpin->value();
-}
-
-void ConfigurationDock::onBundleSizeResetClicked()
-{
-    if (!m_simulator)
-        return;
-
-    m_bundleSizeSpin->setValue(m_simulator->getBundleSize());
-    qDebug() << "[ConfigurationDock] Bundle size reset to"
-             << m_simulator->getBundleSize();
 }
 
 void ConfigurationDock::onOutputFileBrowseClicked()

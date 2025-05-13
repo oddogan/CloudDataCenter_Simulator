@@ -32,8 +32,7 @@ public:
     IPlacementStrategy *getPlacementStrategy() const;
 
     // For bundling
-    void setBundleSize(size_t size);
-    size_t getBundleSize() const { return m_bundleSize; }
+    size_t getBundleSize() const { return m_strategy->getBundleSize(); }
 
     // Thread-safe updates
     bool updateVM(int vmId, double utilization);
@@ -45,6 +44,10 @@ public:
     size_t getTurnedOnMachineCount() const;
     double getAveragePowerConsumption() const;
     double getTotalPowerConsumption() const;
+    size_t getNumberOfSLAViolations() const;
+    size_t getNumberofSLAVsSinceLastPlacement() const { return m_SLAVcountSinceLastPlacement; }
+    size_t getNumberofMigrationsSinceLastPlacement() const { return m_MigrationCountSinceLastPlacement; }
+    size_t getNumberofNewRequestsSinceLastPlacement() const { return m_NewRequestCountSinceLastPlacement; }
 
 private:
     void runPlacement(SimulationEngine &engine);
@@ -58,7 +61,6 @@ private:
     IPlacementStrategy *m_strategy;
 
     // Bundling
-    size_t m_bundleSize;
     mutable std::mutex m_bundleMutex;
     std::vector<VirtualMachine *> m_pendingNewRequests;
     std::vector<VirtualMachine *> m_pendingMigrations;
@@ -69,4 +71,9 @@ private:
     // VM index
     std::unordered_map<int, std::pair<int, VirtualMachine *>> m_vmIndex;
     mutable std::mutex m_vmIndexMutex;
+
+    size_t m_SLAVcount;
+    size_t m_SLAVcountSinceLastPlacement;
+    size_t m_MigrationCountSinceLastPlacement;
+    size_t m_NewRequestCountSinceLastPlacement;
 };

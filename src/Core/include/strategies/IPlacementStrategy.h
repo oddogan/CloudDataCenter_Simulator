@@ -28,6 +28,7 @@ public:
     virtual Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) = 0;
 
     virtual double getMigrationThreshold() = 0;
+    virtual size_t getBundleSize() = 0;
 
     // Returns a QWidget (or a layout) containing input fields for user configuration
     // The DataCenter or GUI can embed this widget in a config panel.

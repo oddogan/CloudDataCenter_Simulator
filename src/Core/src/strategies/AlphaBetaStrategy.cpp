@@ -67,6 +67,11 @@ double AlphaBetaStrategy::getMigrationThreshold()
     return 0.0;
 }
 
+size_t AlphaBetaStrategy::getBundleSize()
+{
+    return 10;
+}
+
 // Build the config widget with spin boxes for alpha & beta
 QWidget *AlphaBetaStrategy::createConfigWidget(QWidget *parent)
 {

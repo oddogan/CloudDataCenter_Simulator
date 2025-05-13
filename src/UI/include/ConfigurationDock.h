@@ -26,8 +26,6 @@ private:
     void onStrategyChanged(int index);
     void onStrategyApplyClicked();
     void onStrategyResetClicked();
-    void onBundleSizeApplyClicked();
-    void onBundleSizeResetClicked();
     void onOutputFileBrowseClicked();
     void onOutputFileApplyClicked();
 
@@ -35,10 +33,6 @@ private:
     ISimulationConfiguration *m_simulator{nullptr};
     QWidget *m_container{nullptr};
     QFormLayout *m_formLayout{nullptr};
-
-    QSpinBox *m_bundleSizeSpin{nullptr};
-    QPushButton *m_bundleSizeApplyButton{nullptr};
-    QPushButton *m_bundleSizeResetButton{nullptr};
 
     QLineEdit *m_outputFilePathEdit{nullptr};
     QPushButton *m_outputFileBrowseBtn{nullptr};

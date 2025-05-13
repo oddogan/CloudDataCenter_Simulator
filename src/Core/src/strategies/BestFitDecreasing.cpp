@@ -27,7 +27,7 @@ Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests,
         MachineState ms;
         ms.id = pm.getID();
         ms.total = pm.getTotal();
-        ms.used = pm.getUsed();
+        ms.used = pm.getReservedUsages();
         localStates.push_back(ms);
     }
 
@@ -35,7 +35,7 @@ Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests,
     // Sort VMs by descending CPU usage
     std::vector<VirtualMachine *> sortedNew = newRequests;
     std::sort(sortedNew.begin(), sortedNew.end(), [](auto *a, auto *b)
-              { return a->getUsage().cpu > b->getUsage().cpu; });
+              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
 
     // Reserve space for results
     results.placementDecision.reserve(newRequests.size());
@@ -76,7 +76,7 @@ Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests,
     // Sort VMs by descending CPU usage
     std::vector<VirtualMachine *> sortedMig = toMigrate;
     std::sort(sortedMig.begin(), sortedMig.end(), [](auto *a, auto *b)
-              { return a->getUsage().cpu > b->getUsage().cpu; });
+              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
 
     // Reserve space for results
     results.migrationDecision.reserve(toMigrate.size());
@@ -118,7 +118,12 @@ Results BestFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests,
 
 double BestFitDecreasing::getMigrationThreshold()
 {
-    return 0.0;
+    return 1.0;
+}
+
+size_t BestFitDecreasing::getBundleSize()
+{
+    return 10;
 }
 
 QWidget *BestFitDecreasing::createConfigWidget(QWidget *parent)

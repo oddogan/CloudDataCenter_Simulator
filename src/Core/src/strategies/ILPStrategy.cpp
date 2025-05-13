@@ -3,7 +3,7 @@
 #include "strategies/ILPStrategy.h"
 #include "logging/LogManager.h"
 
-ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3)
+ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_bundleSize(10)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -234,7 +234,18 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
         cplex.setParam(IloCplex::Param::TimeLimit, 60.0);
         // cplex.setParam(IloCplex::Param::Parallel, IloCplex::Parallel_Mode::Opportunistic);
         cplex.setOut(env.getNullStream());
-        cplex.solve();
+        bool ok = cplex.solve();
+
+        if (ok)
+        {
+            m_lastCost = cplex.getObjValue();
+            m_lastFeasibility = true;
+        }
+        else
+        {
+            m_lastCost = std::numeric_limits<double>::infinity();
+            m_lastFeasibility = false;
+        }
 
         // Output results
         for (int j = 0; j < J; ++j)
@@ -286,6 +297,11 @@ double ILPStrategy::getMigrationThreshold()
     return m_MST;
 }
 
+size_t ILPStrategy::getBundleSize()
+{
+    return m_bundleSize;
+}
+
 void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const std::vector<VirtualMachine *> &requests, const std::vector<VirtualMachine *> &migrations)
 {
     m_chosenMachineCount = 0;
@@ -317,8 +333,6 @@ void ILPStrategy::ChooseMachines(std::vector<PhysicalMachine> &machines, const s
     {
         m_chosenMachines[m_chosenMachineCount++] = m_turnedOffMachines[i];
     }
-
-    LogManager::instance().log(LogCategory::DEBUG, "ILPStrategy: Chose " + std::to_string(m_chosenMachineCount) + " PMs for ILP. " + std::to_string(numExtraPMsToInclude) + " extra PMs included");
 }
 
 double ILPStrategy::CalculatePowerOnCost(PhysicalMachine &machine)

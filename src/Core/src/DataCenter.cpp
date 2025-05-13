@@ -5,13 +5,13 @@
 #include <algorithm>
 #include <iostream>
 #include "strategies/drl/ILPDQNStrategy.h"
+#include "strategies/drl/ILPDDQNStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
 {
     // Default strategy
     setPlacementStrategy(StrategyFactory::create("ILPStrategy"));
-    setBundleSize(10);
 }
 
 DataCenter::~DataCenter()
@@ -36,12 +36,6 @@ DataCenter::~DataCenter()
         delete kv.second.second; // the VM
     }
     m_vmIndex.clear();
-}
-
-void DataCenter::setBundleSize(size_t newSize)
-{
-    std::lock_guard<std::mutex> lock(m_bundleMutex);
-    m_bundleSize = newSize;
 }
 
 void DataCenter::setPlacementStrategy(IPlacementStrategy *strat)
@@ -73,8 +67,9 @@ void DataCenter::handle(const VMRequestEvent &event, SimulationEngine &engine)
     // push to pending
     {
         std::lock_guard<std::mutex> lock(m_bundleMutex);
+        m_NewRequestCountSinceLastPlacement++;
         m_pendingNewRequests.push_back(rawVm);
-        if (m_pendingNewRequests.size() >= m_bundleSize)
+        if (m_pendingNewRequests.size() >= getBundleSize())
         {
             runPlacement(engine);
         }
@@ -136,6 +131,8 @@ void DataCenter::handle(const MigrationCompleteEvent &event, SimulationEngine &e
     auto &newPM = m_physicalMachines[event.getNewPmId()];
     newPM.endMigration();
 
+    m_MigrationCountSinceLastPlacement++;
+
     LogManager::instance().log(LogCategory::VM_MIGRATION, "VM " + std::to_string(vmId) + " migrated from PM " + std::to_string(oldPmId) + " to PM " + std::to_string(event.getNewPmId()));
 }
 
@@ -148,7 +145,7 @@ void DataCenter::runPlacement(SimulationEngine &engine)
 
     std::lock_guard<std::mutex> lock(m_strategyMutex);
 
-    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
     {
         ilpdqn->setDataCenter(this);
     }
@@ -157,6 +154,10 @@ void DataCenter::runPlacement(SimulationEngine &engine)
 
     m_pendingNewRequests.clear();
     m_pendingMigrations.clear();
+
+    m_SLAVcountSinceLastPlacement = 0;
+    m_MigrationCountSinceLastPlacement = 0;
+    m_NewRequestCountSinceLastPlacement = 0;
 
     // Handle new requests
     for (auto &pd : decisions.placementDecision)
@@ -193,7 +194,7 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         }
     }
 
-    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
     {
         ilpdqn->updateAgent();
     }
@@ -249,6 +250,12 @@ bool DataCenter::detectOvercommitment(int pmId, SimulationEngine &engine)
         if (m_physicalMachines[pmId].isMigrating())
         {
             return false; // already in migration
+        }
+
+        if (m_physicalMachines[pmId].isOvercommitted(1.0))
+        {
+            m_SLAVcount++;
+            m_SLAVcountSinceLastPlacement++;
         }
 
         const std::vector<VirtualMachine *> &vmsOnPM = m_physicalMachines[pmId].getVirtualMachines();
@@ -412,6 +419,11 @@ double DataCenter::getTotalPowerConsumption() const
         }
     }
     return total;
+}
+
+size_t DataCenter::getNumberOfSLAViolations() const
+{
+    return m_SLAVcount;
 }
 
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)
