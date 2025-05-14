@@ -92,11 +92,11 @@ Results ILPStrategy::run(const std::vector<VirtualMachine *> &newRequests, const
                 double additionalCost = 0;
                 if (nCPUUtilization < 45)
                 {
-                    additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (300 - 4 * nCPUUtilization) * newRequests[j]->getUsage().cpu;
+                    additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (300 - 4 * nCPUUtilization) * newRequests[j]->getTotalRequestedResources().cpu;
                 }
                 else
                 {
-                    additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getUsage().cpu;
+                    additionalCost = m_chosenMachines[i]->getPowerConsumptionCPU() * (4 * nCPUUtilization - 60) * newRequests[j]->getTotalRequestedResources().cpu;
                 }
                 cost += x_newcomers[j][i] * additionalCost * m_Beta;
             }

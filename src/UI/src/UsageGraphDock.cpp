@@ -62,7 +62,7 @@ void UsageGraphDock::createUI()
     m_chart->addAxis(axisX, Qt::AlignBottom);
 
     auto axisY = new QValueAxis();
-    axisY->setRange(0, 110);
+    axisY->setRange(0, 100);
     axisY->setTickCount(12);
     axisY->setLabelFormat("%d");
     axisY->setTitleText("Usage (%)");

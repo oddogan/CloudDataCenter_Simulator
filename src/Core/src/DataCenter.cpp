@@ -5,13 +5,12 @@
 #include <algorithm>
 #include <iostream>
 #include "strategies/drl/ILPDQNStrategy.h"
-#include "strategies/drl/ILPDDQNStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
 {
     // Default strategy
-    setPlacementStrategy(StrategyFactory::create("ILPStrategy"));
+    setPlacementStrategy(StrategyFactory::create("PAPSO"));
 }
 
 DataCenter::~DataCenter()
@@ -145,7 +144,7 @@ void DataCenter::runPlacement(SimulationEngine &engine)
 
     std::lock_guard<std::mutex> lock(m_strategyMutex);
 
-    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
     {
         ilpdqn->setDataCenter(this);
     }
@@ -194,7 +193,7 @@ void DataCenter::runPlacement(SimulationEngine &engine)
         }
     }
 
-    if (auto ilpdqn = dynamic_cast<IDQNStrategy *>(m_strategy))
+    if (auto ilpdqn = dynamic_cast<ILPDQNStrategy *>(m_strategy))
     {
         ilpdqn->updateAgent();
     }
@@ -430,9 +429,9 @@ void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &eng
 {
     Resources usage = vm->getUsage();
     PhysicalMachine &pm = m_physicalMachines[pmId];
-    if (!pm.canHost(usage))
+    if (!pm.canHost(usage - Resources(1e-6, 1e-6, 1e-6, 1e-6, 1e-6)))
     {
-        std::runtime_error("PM " + std::to_string(pm.getID()) + "cannot host VM" + std::to_string(vm->getID()));
+        throw std::runtime_error("PM " + std::to_string(pm.getID()) + " cannot host VM" + std::to_string(vm->getID()));
     }
     pm.addVM(vm);
 

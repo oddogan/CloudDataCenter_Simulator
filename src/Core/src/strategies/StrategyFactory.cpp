@@ -4,7 +4,6 @@
 #include "strategies/AlphaBetaStrategy.h"
 #include "strategies/ILPStrategy.h"
 #include "strategies/drl/ILPDQNStrategy.h"
-#include "strategies/drl/ILPDDQNStrategy.h"
 #include "strategies/pso/PAPSOStrategy.h"
 
 std::vector<StrategyInfo> StrategyFactory::availableStrategies()
@@ -15,7 +14,6 @@ std::vector<StrategyInfo> StrategyFactory::availableStrategies()
     list.push_back({"AlphaBetaStrategy"});
     list.push_back({"ILPStrategy"});
     list.push_back({"ILP + DQN Strategy"});
-    list.push_back({"ILP + DDQN Strategy"});
     list.push_back({"PAPSO"});
     return list;
 }
@@ -41,10 +39,6 @@ IPlacementStrategy *StrategyFactory::create(const QString &name)
     else if (name == "ILP + DQN Strategy")
     {
         return new ILPDQNStrategy();
-    }
-    else if (name == "ILP + DDQN Strategy")
-    {
-        return new ILPDDQNStrategy();
     }
     else if (name == "PAPSO")
     {

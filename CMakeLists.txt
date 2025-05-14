@@ -24,6 +24,7 @@ add_executable(${PROJECT_NAME} "")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/UI/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
 # Collect Core source files
 file(GLOB_RECURSE CORE_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/Core/include/*.h")
@@ -54,3 +55,7 @@ find_package(Torch REQUIRED PATHS "${CMAKE_CURRENT_SOURCE_DIR}/lib/libtorch/shar
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 target_include_directories(${PROJECT_NAME} PRIVATE ${TORCH_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${TORCH_LIBRARIES})
+
+# Link Eigen
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+target_link_libraries (${PROJECT_NAME} PRIVATE Eigen3::Eigen)
