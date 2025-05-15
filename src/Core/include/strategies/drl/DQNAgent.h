@@ -150,7 +150,7 @@ public:
           gamma(gamma),
           batchSize(batchSize),
           targetUpdateInterval(targetUpdateInterval),
-          device(torch::kCPU) // device = torch::kCUDA; // if you have GPU
+          device(torch::kMPS) // device = torch::kCUDA; // if you have GPU, kCPU
     {
         // Create networks
         qNet = QNet(inDim, outDim);
@@ -315,25 +315,25 @@ public:
     void saveModel(const std::string &baseFilename)
     {
         // Save QNet
-        torch::save(qNet, baseFilename + "_online.pt");
+        torch::save(qNet, baseFilename + "/_online.pt");
         // Save target net
-        torch::save(targetNet, baseFilename + "_target.pt");
+        torch::save(targetNet, baseFilename + "/_target.pt");
         // Optionally save optimizer state
-        torch::save(*optimizer, baseFilename + "_optim.pt");
-        std::cout << "Model saved to " << baseFilename << "_online.pt (etc.)\n";
+        torch::save(*optimizer, baseFilename + "/_optim.pt");
+        std::cout << "Model saved to " << baseFilename << "/_online.pt _target.pt _optim.pt\n";
     }
 
     // Load the model (and optionally the optimizer)
     void loadModel(const std::string &baseFilename)
     {
         // Load QNet
-        torch::load(qNet, baseFilename + "_online.pt");
+        torch::load(qNet, baseFilename + "/_online.pt");
         // Load target net
-        torch::load(targetNet, baseFilename + "_target.pt");
+        torch::load(targetNet, baseFilename + "/_target.pt");
         // Optionally load optimizer
         try
         {
-            torch::load(*optimizer, baseFilename + "_optim.pt");
+            torch::load(*optimizer, baseFilename + "/_optim.pt");
         }
         catch (...)
         {
@@ -341,7 +341,7 @@ public:
         }
         // Sync target net if needed
         syncTargetNet();
-        std::cout << "Model loaded from " << baseFilename << "_online.pt (etc.)\n";
+        std::cout << "Model loaded from " << baseFilename << "/_online.pt _target.pt _optim.pt\n";
     }
 
     size_t getBatchSize() const

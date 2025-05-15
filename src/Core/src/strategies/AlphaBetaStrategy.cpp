@@ -1,5 +1,4 @@
 #include "strategies/AlphaBetaStrategy.h"
-#include <QFormLayout>
 #include <algorithm>
 #include "strategies/MachineState.h"
 #include "data/Resources.h"
@@ -24,6 +23,9 @@ Results AlphaBetaStrategy::run(const std::vector<VirtualMachine *> &newRequests,
     {
         MachineState ms;
         ms.id = pm.getID();
+        ms.isTurnedOn = pm.isTurnedOn();
+        ms.powerOnCost = pm.getPowerOnCost();
+        ms.cpuCost = pm.getPowerConsumptionCPU();
         ms.total = pm.getTotal();
         ms.used = pm.getUsed();
         localStates.push_back(ms);
@@ -109,4 +111,19 @@ void AlphaBetaStrategy::applyConfigFromUI()
 QString AlphaBetaStrategy::name() const
 {
     return "AlphaBetaStrategy";
+}
+
+QWidget *AlphaBetaStrategy::createStatusWidget(QWidget *parent)
+{
+    if (!m_statusWidget)
+    {
+        m_statusWidget = new QWidget(parent);
+        auto layout = new QFormLayout(m_statusWidget);
+        auto label = new QLabel("Alpha: " + QString::number(m_alpha), m_statusWidget);
+        layout->addRow(label);
+        label = new QLabel("Beta: " + QString::number(m_beta), m_statusWidget);
+        layout->addRow(label);
+        m_statusWidget->setLayout(layout);
+    }
+    return m_statusWidget;
 }

@@ -3,7 +3,6 @@
 #include "../ILPStrategy.h"
 #include "DQNAgent.h"
 #include <ilcplex/ilocplex.h>
-#include <QWidget>
 
 class DataCenter;
 
@@ -21,6 +20,7 @@ public:
 
     virtual QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     virtual void applyConfigFromUI() override;
+    virtual QWidget *createStatusWidget(QWidget *parent = nullptr) override;
     QString name() const override;
 
 protected:
@@ -39,4 +39,5 @@ protected:
     double m_gap;
 
     QWidget *m_configWidget{nullptr};
+    QWidget *m_statusWidget{nullptr};
 };

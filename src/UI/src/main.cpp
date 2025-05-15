@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 
     // Start the trace reader
     TraceReader reader(queue);
-    reader.readTraceFile("/Users/oddogan/MSc/CDC/trace_0.txt");
+    // reader.readTraceFile("/Users/oddogan/MSc/CDC/trace_0.txt");
 
     // Start the data center
     DataCenter dc;
@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
     // TODO: Set up the data center
 
     // Add the physical machines to the data center
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 500; ++i)
     {
-        dc.addPhysicalMachine(PhysicalMachine(i, Resources(40, 1024, 24576, 40000, 100), 10, 10, 1));
+        dc.addPhysicalMachine(PhysicalMachine(i, Resources(40, 1024, 24576, 400000, 100), 10, 10, 1));
     }
 
     // Run in CLI mode if arguments are provided

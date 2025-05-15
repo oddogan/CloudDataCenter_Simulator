@@ -3,7 +3,7 @@
 #include "strategies/ILPStrategy.h"
 #include "logging/LogManager.h"
 
-ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.75), m_Beta(1.0), m_Gamma(1.0), m_MST(1.0), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_bundleSize(10)
+ILPStrategy::ILPStrategy() : m_Mu(250), m_Tau(0.85), m_Beta(1.0), m_Gamma(1.0), m_MST(0.9), m_extraMachineCoefficient(5.0), m_maximumRequestsInPM(100e3), m_bundleSize(10)
 {
     m_chosenMachines.resize(1e3, nullptr);
     m_chosenMachineCount = 0;
@@ -415,4 +415,38 @@ void ILPStrategy::applyConfigFromUI()
 QString ILPStrategy::name() const
 {
     return "ILP Strategy";
+}
+
+QWidget *ILPStrategy::createStatusWidget(QWidget *parent)
+{
+    if (!m_statusWidget)
+    {
+        m_statusWidget = new QWidget(parent);
+        auto layout = new QFormLayout(m_statusWidget);
+
+        auto muLabel = new QLabel(QString::number(m_Mu), m_statusWidget);
+        layout->addRow("Mu (Migration Cost):", muLabel);
+
+        auto tauLabel = new QLabel(QString::number(m_Tau), m_statusWidget);
+        layout->addRow("Tau (Target Utilization after Migration):", tauLabel);
+
+        auto betaLabel = new QLabel(QString::number(m_Beta), m_statusWidget);
+        layout->addRow("Beta (Expected Utilization Scaler for Newcomers):", betaLabel);
+
+        auto gammaLabel = new QLabel(QString::number(m_Gamma), m_statusWidget);
+        layout->addRow("Gamma (Expected Utilization Scaler for Migrations):", gammaLabel);
+
+        auto mstLabel = new QLabel(QString::number(m_MST), m_statusWidget);
+        layout->addRow("MST (Migration Start Threshold):", mstLabel);
+
+        auto extraMachineCoefficientLabel = new QLabel(QString::number(m_extraMachineCoefficient), m_statusWidget);
+        layout->addRow("Extra Machine Coefficient:", extraMachineCoefficientLabel);
+
+        auto maximumRequestsInPMLabel = new QLabel(QString::number(m_maximumRequestsInPM), m_statusWidget);
+        layout->addRow("Maximum Requests in PM:", maximumRequestsInPMLabel);
+
+        m_statusWidget->setLayout(layout);
+    }
+
+    return m_statusWidget;
 }

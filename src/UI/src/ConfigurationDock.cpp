@@ -68,6 +68,19 @@ void ConfigurationDock::createUI()
     hbox->addWidget(m_strategyResetBtn);
     m_formLayout->addRow(hbox);
 
+    // Get the current strategy from the simulator
+    auto strategy = m_simulator->getPlacementStrategy();
+
+    // Add its status widget
+    if (strategy)
+    {
+        m_currentStrategyStatusWidget = strategy->createStatusWidget(m_container);
+        if (m_currentStrategyStatusWidget)
+        {
+            m_formLayout->addRow(m_currentStrategyStatusWidget);
+        }
+    }
+
     m_container->setLayout(m_formLayout);
     setWidget(m_container);
 
@@ -138,6 +151,24 @@ void ConfigurationDock::onStrategyApplyClicked()
 
     qDebug() << "[ConfigurationDock] Strategy apply done for" << m_currentStrategy->name();
     m_simulator->setPlacementStrategy(m_currentStrategy);
+
+    // Update the strategy status widget with the new strategy's status widget, delete previous if still exists
+    if (m_currentStrategyStatusWidget)
+    {
+        m_formLayout->removeRow(m_currentStrategyStatusWidget);
+        m_currentStrategyStatusWidget = nullptr;
+    }
+
+    QWidget *statusWidget = m_currentStrategy->createStatusWidget(m_container);
+    if (statusWidget)
+    {
+        m_formLayout->addRow(statusWidget);
+        m_currentStrategyStatusWidget = statusWidget;
+    }
+    else
+    {
+        qDebug() << "[ConfigurationDock] No status widget for strategy" << m_currentStrategy->name();
+    }
 
     // reset the combo box
     clearCurrentStrategy(false);

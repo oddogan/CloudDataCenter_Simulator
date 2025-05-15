@@ -2,7 +2,14 @@
 
 #include <vector>
 #include <QWidget>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QString>
+#include <QFormLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QFileDialog>
 #include "data/PhysicalMachine.h"
 #include "data/VirtualMachine.h"
 
@@ -33,6 +40,9 @@ public:
     // Returns a QWidget (or a layout) containing input fields for user configuration
     // The DataCenter or GUI can embed this widget in a config panel.
     virtual QWidget *createConfigWidget(QWidget *parent = nullptr) = 0;
+
+    // Returns a QWidget (or a layout) containing the current detailed status about the strategy
+    virtual QWidget *createStatusWidget(QWidget *parent = nullptr) = 0;
 
     // Called by the GUI once the user changes parameters in the config widget
     // Letting the strategy update its internal fields

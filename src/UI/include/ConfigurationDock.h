@@ -43,6 +43,7 @@ private:
     QPushButton *m_strategyResetBtn{nullptr};
     IPlacementStrategy *m_currentStrategy{nullptr};
     QWidget *m_currentStrategyWidget{nullptr};
+    QWidget *m_currentStrategyStatusWidget{nullptr};
 
     void createUI();
     void loadStrategyList();

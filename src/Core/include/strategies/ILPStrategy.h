@@ -1,8 +1,4 @@
 #pragma once
-
-#include <QWidget>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
 #include "IPlacementStrategy.h"
 
 class ILPStrategy : public IPlacementStrategy
@@ -17,6 +13,7 @@ public:
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
+    virtual QWidget *createStatusWidget(QWidget *parent = nullptr) override;
     QString name() const override;
 
 protected:
@@ -47,4 +44,5 @@ protected:
     QDoubleSpinBox *m_extraMachineCoefficientSpin{nullptr};
     QSpinBox *m_maximumRequestsInPMSpin{nullptr};
     QWidget *m_configWidget{nullptr};
+    QWidget *m_statusWidget{nullptr};
 };

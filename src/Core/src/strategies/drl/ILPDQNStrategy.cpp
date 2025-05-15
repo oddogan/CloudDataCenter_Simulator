@@ -1,6 +1,5 @@
 #include "strategies/drl/ILPDQNStrategy.h"
 #include "DataCenter.h"
-#include <QFormLayout>
 #include "logging/LogManager.h"
 
 ILPDQNStrategy::ILPDQNStrategy()
@@ -118,6 +117,57 @@ void ILPDQNStrategy::applyConfigFromUI()
     qDebug() << "ILPDQNStrategy: MIP Gap set to " << m_gap;
     m_agent->setBatchSize(m_configWidget->findChild<QSpinBox *>()->value());
     qDebug() << "ILPDQNStrategy: Batch Size set to " << m_agent->getBatchSize();
+}
+
+QWidget *ILPDQNStrategy::createStatusWidget(QWidget *parent)
+{
+    if (!m_statusWidget)
+    {
+        m_statusWidget = new QWidget(parent);
+        auto layout = new QFormLayout(m_statusWidget);
+
+        auto statusLabel = new QLabel("ILPDQNStrategy", m_statusWidget);
+        layout->addRow(statusLabel);
+
+        auto stateLabel = new QLabel("State Size: " + QString::number(m_stateSize), m_statusWidget);
+        layout->addRow(stateLabel);
+
+        auto actionLabel = new QLabel("Action Size: " + QString::number(m_actions.size()), m_statusWidget);
+        layout->addRow(actionLabel);
+
+        auto batchSizeLabel = new QLabel("Batch Size: " + QString::number(m_agent->getBatchSize()), m_statusWidget);
+        layout->addRow(batchSizeLabel);
+
+        auto gapLabel = new QLabel("MIP Gap: " + QString::number(m_gap), m_statusWidget);
+        layout->addRow(gapLabel);
+
+        // Add buttons to load and save the DQN model
+        auto loadButton = new QPushButton("Load Model", m_statusWidget);
+        layout->addRow(loadButton);
+        QObject::connect(loadButton, &QPushButton::clicked, [this]()
+                         {
+                            // Get the directory name using QFileDialog
+                            QString dirname = QFileDialog::getExistingDirectory(m_statusWidget, "Select Directory", QString());
+
+                             if (!dirname.isEmpty())
+                             {
+                                 m_agent->loadModel(dirname.toStdString());
+                             } });
+
+        auto saveButton = new QPushButton("Save Model", m_statusWidget);
+        layout->addRow(saveButton);
+        QObject::connect(saveButton, &QPushButton::clicked, [this]()
+                         {
+                            // Get the directory name using QFileDialog
+                            QString dirname = QFileDialog::getExistingDirectory(m_statusWidget, "Select Directory", QString());
+                             if (!dirname.isEmpty())
+                             {
+                                 m_agent->saveModel(dirname.toStdString());
+                             } });
+
+        m_statusWidget->setLayout(layout);
+    }
+    return m_statusWidget;
 }
 
 std::vector<double> ILPDQNStrategy::ComputeState()

@@ -5,6 +5,7 @@
 #include "strategies/ILPStrategy.h"
 #include "strategies/drl/ILPDQNStrategy.h"
 #include "strategies/pso/PAPSOStrategy.h"
+#include "strategies/OpenStack.h"
 
 std::vector<StrategyInfo> StrategyFactory::availableStrategies()
 {
@@ -15,6 +16,7 @@ std::vector<StrategyInfo> StrategyFactory::availableStrategies()
     list.push_back({"ILPStrategy"});
     list.push_back({"ILP + DQN Strategy"});
     list.push_back({"PAPSO"});
+    list.push_back({"OpenStack"});
     return list;
 }
 
@@ -43,6 +45,10 @@ IPlacementStrategy *StrategyFactory::create(const QString &name)
     else if (name == "PAPSO")
     {
         return new PAPSOStrategy();
+    }
+    else if (name == "OpenStack")
+    {
+        return new OpenStack();
     }
     else
     {

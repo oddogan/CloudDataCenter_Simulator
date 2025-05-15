@@ -1,12 +1,13 @@
 #pragma once
 
 #include "IPlacementStrategy.h"
+#include <vector>
 
-class AlphaBetaStrategy : public IPlacementStrategy
+class OpenStack : public IPlacementStrategy
 {
 public:
-    AlphaBetaStrategy();
-    ~AlphaBetaStrategy() override;
+    OpenStack();
+    ~OpenStack() override;
 
     Results run(const std::vector<VirtualMachine *> &newRequests, const std::vector<VirtualMachine *> &toMigrate, const std::vector<PhysicalMachine> &machines) override;
     double getMigrationThreshold() override;
@@ -18,11 +19,9 @@ public:
     QString name() const override;
 
 private:
-    double m_alpha;
-    double m_beta;
+    double m_ial{0.8};
 
-    QDoubleSpinBox *m_alphaSpin;
-    QDoubleSpinBox *m_betaSpin;
     QWidget *m_configWidget{nullptr};
     QWidget *m_statusWidget{nullptr};
+    QDoubleSpinBox *m_ialSpin{nullptr};
 };

@@ -26,6 +26,9 @@ Results FirstFitDecreasing::run(const std::vector<VirtualMachine *> &newRequests
     {
         MachineState ms;
         ms.id = pm.getID();
+        ms.isTurnedOn = pm.isTurnedOn();
+        ms.powerOnCost = pm.getPowerOnCost();
+        ms.cpuCost = pm.getPowerConsumptionCPU();
         ms.total = pm.getTotal(); // reading pm's lock internally
         ms.used = pm.getReservedUsages();
         localStates.push_back(ms);
@@ -131,4 +134,19 @@ void FirstFitDecreasing::applyConfigFromUI()
 QString FirstFitDecreasing::name() const
 {
     return "FirstFitDecreasing";
+}
+
+QWidget *FirstFitDecreasing::createStatusWidget(QWidget *parent)
+{
+    if (!m_statusWidget)
+    {
+        m_statusWidget = new QWidget(parent);
+        auto layout = new QVBoxLayout(m_statusWidget);
+
+        QLabel *label = new QLabel("No status for FirstFitDecreasing", m_statusWidget);
+        layout->addWidget(label);
+
+        m_statusWidget->setLayout(layout);
+    }
+    return m_statusWidget;
 }

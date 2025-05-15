@@ -13,8 +13,10 @@ public:
 
     QWidget *createConfigWidget(QWidget *parent = nullptr) override;
     void applyConfigFromUI() override;
+    QWidget *createStatusWidget(QWidget *parent = nullptr) override;
     QString name() const override;
 
 private:
-    QWidget *m_configWidget;
+    QWidget *m_configWidget{nullptr};
+    QWidget *m_statusWidget{nullptr};
 };

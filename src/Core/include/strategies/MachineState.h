@@ -6,6 +6,9 @@
 struct MachineState
 {
     int id;
+    bool isTurnedOn;
+    double powerOnCost;
+    double cpuCost;
     Resources total; // total capacity
     Resources used;  // current usage
 

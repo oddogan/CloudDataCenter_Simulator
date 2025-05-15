@@ -63,7 +63,7 @@ struct PAPSOObjective
 
         for (int pm = 0; pm < (int)pms.size(); ++pm)
         {
-            const double penalty = 1e10;
+            const double penalty = 0;
             if (loads[pm].cpu > totals[pm].cpu)
             {
                 result += (penalty * (loads[pm].cpu - totals[pm].cpu) / totals[pm].cpu);
@@ -87,7 +87,7 @@ struct PAPSOObjective
         }
 
         size_t newMachines = activeCount - numTurnedOnInitially;
-        result += newMachines * 1e5;
+        result += newMachines * 0;
 
         return result;
     }
@@ -147,7 +147,7 @@ Results PAPSOStrategy::run(const std::vector<VirtualMachine *> &newRequests,
 
     // 5) Configure PSO stopping criteria & performance
     opt.setMaxIterations(m_maxIterations);
-    opt.setThreads(1);   // single-threaded
+    opt.setThreads(0);   // single-threaded
     opt.setVerbosity(0); // silent
     opt.setPhiParticles(m_c1);
     opt.setPhiGlobal(m_c2);
@@ -202,4 +202,17 @@ void PAPSOStrategy::applyConfigFromUI()
 QString PAPSOStrategy::name() const
 {
     return "PAPSO";
+}
+
+QWidget *PAPSOStrategy::createStatusWidget(QWidget *parent)
+{
+    if (!m_statusWidget)
+    {
+        m_statusWidget = new QWidget(parent);
+        auto layout = new QVBoxLayout(m_statusWidget);
+        QLabel *label = new QLabel("No status for PAPSOStrategy", m_statusWidget);
+        layout->addWidget(label);
+        m_statusWidget->setLayout(layout);
+    }
+    return m_statusWidget;
 }
