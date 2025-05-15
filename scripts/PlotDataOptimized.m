@@ -1,5 +1,6 @@
 function PlotDataOptimized(varargin)
     figure;
+    set(gcf, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
     
     colors = lines(length(varargin)); % Generate distinguishable colors
 
@@ -12,7 +13,7 @@ function PlotDataOptimized(varargin)
     end
 
     % Downsampling factor (adjust as needed)
-    ds_factor = 100; % Plot every 100th point
+    ds_factor = 1; % Plot every 100th point
 
     % Helper function for downsampling
     downsampleData = @(x) x(1:ds_factor:end);
@@ -30,7 +31,7 @@ function PlotDataOptimized(varargin)
     end
     hold off;
     xlabel('Örnek'); ylabel('Kullanım (%)');
-    title('Toplam Kaynak Kullanımı');
+    title('Ortalama Kaynak Kullanımı');
     legend('Location', 'best'); grid on;
     drawnow limitrate; % Reduce figure updates for performance
 
@@ -40,7 +41,7 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.turnedOnMachineCount), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.turnedOnMachineCount), '-', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
     xlabel('Örnek'); ylabel('Sayı');
@@ -54,7 +55,7 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.numberOfSLAVs), '-', 'Color', color, 'LineWidth', 1, 'DisplayName', sprintf('%s', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.numberOfSLAVs), '-', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
     xlabel('Örnek'); ylabel('Sayı');
@@ -68,7 +69,7 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.averagePowerConsumption), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.averagePowerConsumption), '-', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
     xlabel('Örnek'); ylabel('Güç Tüketimi (W)');
@@ -82,7 +83,7 @@ function PlotDataOptimized(varargin)
     for i = 1:length(dataSets)
         data = dataSets{i};
         color = colors(i, :);
-        plot(downsampleData(data.time), downsampleData(data.totalPowerConsumption / 1e3), '-', 'Color', color, 'LineWidth', 0.8, 'DisplayName', sprintf('%s', names{i}));
+        plot(downsampleData(data.time), downsampleData(data.totalPowerConsumption / 1e3), '-', 'Color', color, 'LineWidth', 1.5, 'DisplayName', sprintf('%s', names{i}));
     end
     hold off;
     xlabel('Örnek'); ylabel('Güç Tüketimi (kW)');

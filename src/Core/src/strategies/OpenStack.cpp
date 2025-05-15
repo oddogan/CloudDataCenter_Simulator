@@ -28,17 +28,11 @@ Results OpenStack::run(const std::vector<VirtualMachine *> &newRequests, const s
         localStates.push_back(ms);
     }
 
-    // 1) Handle newRequests
-    // Sort VMs by descending CPU usage
-    std::vector<VirtualMachine *> sortedNew = newRequests;
-    std::sort(sortedNew.begin(), sortedNew.end(), [](auto *a, auto *b)
-              { return a->getTotalRequestedResources().cpu > b->getTotalRequestedResources().cpu; });
-
     // Reserve space for results
     results.placementDecision.reserve(newRequests.size());
 
     // For each VM in descending order, do a "Best Fit"
-    for (auto *vm : sortedNew)
+    for (auto *vm : newRequests)
     {
         Resources need = vm->getTotalRequestedResources();
         int bestIdx = -1;
@@ -51,6 +45,18 @@ Results OpenStack::run(const std::vector<VirtualMachine *> &newRequests, const s
             if (ms.canHost(need))
             {
                 if ((ms.total.cpu * (1 - m_ial) > (ms.total.cpu - ms.used.cpu - need.cpu)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.ram * (1 - m_ial) > (ms.total.ram - ms.used.ram - need.ram)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.disk * (1 - m_ial) > (ms.total.disk - ms.used.disk - need.disk)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.bandwidth * (1 - m_ial) > (ms.total.bandwidth - ms.used.bandwidth - need.bandwidth)))
                 {
                     continue; // skip if the PM is already too loaded
                 }
@@ -79,17 +85,11 @@ Results OpenStack::run(const std::vector<VirtualMachine *> &newRequests, const s
         }
     }
 
-    // 2) Handle toMigrate
-    // Sort VMs by descending CPU usage
-    std::vector<VirtualMachine *> sortedMig = toMigrate;
-    std::sort(sortedMig.begin(), sortedMig.end(), [](auto *a, auto *b)
-              { return a->getUsage().cpu > b->getUsage().cpu; });
-
     // Reserve space for results
     results.migrationDecision.reserve(toMigrate.size());
 
     // For each VM in descending order, do a "Best Fit"
-    for (auto *vm : sortedNew)
+    for (auto *vm : toMigrate)
     {
         Resources need = vm->getUsage();
         int bestIdx = -1;
@@ -102,6 +102,18 @@ Results OpenStack::run(const std::vector<VirtualMachine *> &newRequests, const s
             if (ms.canHost(need))
             {
                 if ((ms.total.cpu * (1 - m_ial) > (ms.total.cpu - ms.used.cpu - need.cpu)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.ram * (1 - m_ial) > (ms.total.ram - ms.used.ram - need.ram)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.disk * (1 - m_ial) > (ms.total.disk - ms.used.disk - need.disk)))
+                {
+                    continue; // skip if the PM is already too loaded
+                }
+                if ((ms.total.bandwidth * (1 - m_ial) > (ms.total.bandwidth - ms.used.bandwidth - need.bandwidth)))
                 {
                     continue; // skip if the PM is already too loaded
                 }
