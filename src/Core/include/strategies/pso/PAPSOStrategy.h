@@ -10,10 +10,11 @@
 class PAPSOStrategy : public IPlacementStrategy
 {
 public:
-    PAPSOStrategy(double w1 = 0.4, double w2 = 0.9,
+    PAPSOStrategy(double w1 = 0.5, double w2 = 0.5,
                   int swarmSize = 60, int maxIterations = 100,
                   double inertiaMin = 0.4, double inertiaMax = 0.9,
-                  double c1 = 2.05, double c2 = 2.05);
+                  double c1 = 2.05, double c2 = 2.05,
+                  double maxVelocity = 10);
 
     virtual Results run(const std::vector<VirtualMachine *> &newRequests,
                         const std::vector<VirtualMachine *> &toMigrate,
@@ -42,6 +43,7 @@ private:
     int m_maxIterations;
     double m_inertiaMin, m_inertiaMax;
     double m_c1, m_c2;
+    double m_maxVelocity;
 
     double m_utilThreshold{0.8};
 
@@ -56,4 +58,14 @@ private:
     // GUI
     QWidget *m_configWidget{nullptr};
     QWidget *m_statusWidget{nullptr};
+    QDoubleSpinBox *m_w1Spin{nullptr};
+    QDoubleSpinBox *m_w2Spin{nullptr};
+    QSpinBox *m_swarmSizeSpin{nullptr};
+    QSpinBox *m_maxIterationsSpin{nullptr};
+    QDoubleSpinBox *m_inertiaMinSpin{nullptr};
+    QDoubleSpinBox *m_inertiaMaxSpin{nullptr};
+    QDoubleSpinBox *m_c1Spin{nullptr};
+    QDoubleSpinBox *m_c2Spin{nullptr};
+    QDoubleSpinBox *m_utilThresholdSpin{nullptr};
+    QDoubleSpinBox *m_maxVelocitySpin{nullptr};
 };

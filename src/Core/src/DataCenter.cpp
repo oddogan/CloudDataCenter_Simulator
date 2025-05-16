@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include "strategies/drl/ILPDQNStrategy.h"
+#include "strategies/pso/PAPSOStrategy.h"
 
 DataCenter::DataCenter()
     : m_strategy(nullptr)
@@ -298,7 +299,7 @@ bool DataCenter::updateVM(int vmId, double utilization)
 
     PhysicalMachine &pm = m_physicalMachines[pmId];
     pm.free(oldUsage);
-    LogManager::instance().log(LogCategory::VM_UTIL_UPDATE, "VM " + std::to_string(vmId) + " updated on PM " + std::to_string(pmId) + " - new usage: " + "0" + " - available: " + "0"); // TODO: add actual values
+    LogManager::instance().log(LogCategory::VM_UTIL_UPDATE, "VM " + std::to_string(vmId) + " updated on PM " + std::to_string(pmId) + " - new usage: " + std::to_string(vmPtr->getUsage().cpu) + " - available: " + std::to_string(pm.getTotal().cpu - pm.getUsed().cpu));
     pm.allocate(vmPtr->getUsage());
 
     if (vmPtr->isMigrating())
@@ -428,12 +429,57 @@ size_t DataCenter::getNumberOfSLAViolations() const
 void DataCenter::placeVMonPM(VirtualMachine *vm, int pmId, SimulationEngine &engine)
 {
     Resources usage = vm->getUsage();
-    PhysicalMachine &pm = m_physicalMachines[pmId];
-    if (!pm.canHost(usage - Resources(1e-6, 1e-6, 1e-6, 1e-6, 1e-6)))
+    PhysicalMachine *pm = &m_physicalMachines[pmId];
+    if (!pm->canHost(usage - Resources(1e-6, 1e-6, 1e-6, 1e-6, 1e-6)))
     {
-        throw std::runtime_error("PM " + std::to_string(pm.getID()) + " cannot host VM" + std::to_string(vm->getID()));
+        if (dynamic_cast<PAPSOStrategy *>(m_strategy))
+        {
+            // Try random PMs until we find a fit
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis(0, m_physicalMachines.size() - 1);
+            int randomPmId = dis(gen);
+            size_t trialCount = 0;
+            bool found = true;
+            while (randomPmId == pmId || !(m_physicalMachines[randomPmId].isTurnedOn() && m_physicalMachines[randomPmId].canHost(usage - Resources(1e-6, 1e-6, 1e-6, 1e-6, 1e-6))))
+            {
+                randomPmId = dis(gen);
+                if (++trialCount == m_physicalMachines.size())
+                {
+                    LogManager::instance().log(LogCategory::WARNING, "No Turned on PM found for VM " + std::to_string(vm->getID()) + " after " + std::to_string(trialCount) + " trials");
+                    found = false;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                // Could not find any turned on PMs, look for other ones
+                trialCount = 0;
+                while (randomPmId == pmId || !m_physicalMachines[randomPmId].canHost(usage - Resources(1e-6, 1e-6, 1e-6, 1e-6, 1e-6)))
+                {
+                    randomPmId = dis(gen);
+                    if (++trialCount == m_physicalMachines.size())
+                    {
+                        LogManager::instance().log(LogCategory::WARNING, "No PM found for VM " + std::to_string(vm->getID()) + " after " + std::to_string(trialCount) + " trials");
+                        throw std::runtime_error("No PM found for VM " + std::to_string(vm->getID()) + " after " + std::to_string(trialCount) + " trials");
+                    }
+                }
+            }
+
+            pmId = randomPmId;
+
+            pm = &m_physicalMachines[pmId];
+
+            LogManager::instance().log(LogCategory::WARNING, "VM " + std::to_string(vm->getID()) + " placed on PM " + std::to_string(pmId) + "(Turned on: " + std::to_string(pm->isTurnedOn()) + ") after " + std::to_string(trialCount) + " trials");
+        }
+        else
+        {
+            throw std::runtime_error("PM " + std::to_string(pm->getID()) + " cannot host VM" + std::to_string(vm->getID()));
+        }
     }
-    pm.addVM(vm);
+
+    pm->addVM(vm);
 
     // insert in vmIndex
     {

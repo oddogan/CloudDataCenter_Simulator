@@ -11,6 +11,7 @@
 #include "events/MigrationCompleteEvent.h"
 #include "strategies/StrategyFactory.h"
 #include "logging/LogManager.h"
+#include <random>
 
 class SimulationEngine;
 

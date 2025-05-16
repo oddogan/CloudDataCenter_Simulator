@@ -28,6 +28,8 @@ LogManager::LogManager() : m_currentLogFile(""), m_logToConsole(true)
     {
         m_categoriesEnabled[info.cat] = false;
     }
+
+    m_categoriesEnabled[LogCategory::WARNING] = true; // default to true
 }
 
 LogManager::~LogManager()
